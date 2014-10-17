@@ -5,9 +5,19 @@ import com.google.android.glass.timeline.LiveCard.PublishMode;
 
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.widget.RemoteViews;
+
+import java.util.List;
 
 /**
  * A {@link Service} that publishes a {@link LiveCard} in the timeline.
@@ -16,7 +26,32 @@ public class LiveCardService extends Service {
 
     private static final String LIVE_CARD_TAG = "LiveCardService";
 
-    private LiveCard mLiveCard;
+    private final Handler handler = new Handler();
+    private final UpdateLiveCardRunnable updateTask = new UpdateLiveCardRunnable();
+    private static final long DELAY_MS = 2000;
+    private static final long MIN_DISTANCE = 0;
+
+    private LocationManager locationManager;
+    private LocationListener locationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            long age = System.currentTimeMillis() - location.getTime();
+            liveCardViews.setTextViewText(R.id.lat, Double.toString(location.getLatitude()));
+            liveCardViews.setTextViewText(R.id.lng, Double.toString(location.getLongitude()));
+            liveCardViews.setTextViewText(R.id.accuracy, Float.toString(location.getAccuracy()));
+            liveCardViews.setTextViewText(R.id.age, Long.toString(age));
+            liveCard.setViews(liveCardViews);
+        }
+        @Override
+        public void onProviderDisabled(String provider) {}
+        @Override
+        public void onProviderEnabled(String provider) {}
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {}
+    };
+
+    private LiveCard liveCard;
+    private RemoteViews liveCardViews;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -25,28 +60,70 @@ public class LiveCardService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (mLiveCard == null) {
-            mLiveCard = new LiveCard(this, LIVE_CARD_TAG);
+        if (liveCard == null) {
+            liveCard = new LiveCard(this, LIVE_CARD_TAG);
 
-            RemoteViews remoteViews = new RemoteViews(getPackageName(), R.layout.live_card);
-            mLiveCard.setViews(remoteViews);
+            liveCardViews = new RemoteViews(getPackageName(), R.layout.live_card);
+            liveCard.setViews(liveCardViews);
 
             // Display the options menu when the live card is tapped.
             Intent menuIntent = new Intent(this, LiveCardMenuActivity.class);
-            mLiveCard.setAction(PendingIntent.getActivity(this, 0, menuIntent, 0));
-            mLiveCard.publish(PublishMode.REVEAL);
+            liveCard.setAction(PendingIntent.getActivity(this, 0, menuIntent, 0));
+            liveCard.publish(PublishMode.REVEAL);
+
+            locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            Criteria criteria = new Criteria();
+            criteria.setAccuracy(Criteria.ACCURACY_FINE);
+            criteria.setBearingRequired(false);
+            criteria.setSpeedRequired(false);
+            List<String> providers = locationManager.getProviders(criteria, true);
+            liveCardViews.setTextViewText(R.id.lat, providers.get(0));
+            liveCard.setViews(liveCardViews);
+            for (String provider : providers) {
+                locationManager.requestLocationUpdates(provider,
+                        1000, MIN_DISTANCE, locationListener, Looper.getMainLooper());
+            }
+
+            //handler.post(updateTask);
         } else {
-            mLiveCard.navigate();
+            liveCard.navigate();
         }
         return START_STICKY;
     }
 
     @Override
     public void onDestroy() {
-        if (mLiveCard != null && mLiveCard.isPublished()) {
-            mLiveCard.unpublish();
-            mLiveCard = null;
+        if (liveCard != null && liveCard.isPublished()) {
+            liveCard.unpublish();
+            liveCard = null;
+            updateTask.stop();
         }
         super.onDestroy();
+    }
+
+    private class UpdateLiveCardRunnable implements Runnable {
+        private boolean stopped = false;
+
+        @Override
+        public void run() {
+            if (stopped) {
+                return;
+            }
+            Location location = locationManager.getLastKnownLocation(
+                    "remote_fused_high_accuracy");
+            if (location != null) {
+                long age = System.currentTimeMillis() - location.getTime();
+                liveCardViews.setTextViewText(R.id.lat, Double.toString(location.getLatitude()));
+                liveCardViews.setTextViewText(R.id.lng, Double.toString(location.getLongitude()));
+                liveCardViews.setTextViewText(R.id.accuracy, Float.toString(location.getAccuracy()));
+                liveCardViews.setTextViewText(R.id.age, Long.toString(age));
+                liveCard.setViews(liveCardViews);
+            }
+            handler.postDelayed(this, DELAY_MS);
+        }
+
+        public void stop() {
+            stopped = true;
+        }
     }
 }
