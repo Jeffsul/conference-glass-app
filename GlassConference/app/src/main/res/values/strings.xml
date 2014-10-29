@@ -2,8 +2,12 @@
 <resources>
 
     <string name="app_name">GlassConference</string>
-    <string name="title_activity_live_card_service">Hello World LiveCard</string>
+    <string name="title_activity_live_card_service">GlassConference Demo</string>
     <string name="action_stop">Stop</string>
-    <string name="hello_world">Hello world!</string>
+    <string name="loading">...</string>
+    <string name="label_age">Age: </string>
+    <string name="label_lat">Lat: </string>
+    <string name="label_lng">Lng: </string>
+    <string name="label_accuracy">Accuracy: </string>
 
 </resources>

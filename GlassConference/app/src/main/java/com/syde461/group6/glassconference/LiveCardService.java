@@ -24,23 +24,24 @@ import java.util.List;
  */
 public class LiveCardService extends Service {
 
-    private static final String LIVE_CARD_TAG = "LiveCardService";
+    private static final String LIVE_CARD_TAG = "GlassConferenceHelperService";
 
     private final Handler handler = new Handler();
     private final UpdateLiveCardRunnable updateTask = new UpdateLiveCardRunnable();
-    private static final long DELAY_MS = 2000;
+
+    private static final long MIN_DELAY = 1000;
     private static final long MIN_DISTANCE = 0;
 
+    private static final long AGE_CUTOFF = 10000;
+    private long lastUpdate;
+
     private LocationManager locationManager;
+
     private LocationListener locationListener = new LocationListener() {
         @Override
         public void onLocationChanged(Location location) {
-            long age = System.currentTimeMillis() - location.getTime();
-            liveCardViews.setTextViewText(R.id.lat, Double.toString(location.getLatitude()));
-            liveCardViews.setTextViewText(R.id.lng, Double.toString(location.getLongitude()));
-            liveCardViews.setTextViewText(R.id.accuracy, Float.toString(location.getAccuracy()));
-            liveCardViews.setTextViewText(R.id.age, Long.toString(age));
-            liveCard.setViews(liveCardViews);
+            lastUpdate = System.currentTimeMillis();
+            updateLiveCardView(location);
         }
         @Override
         public void onProviderDisabled(String provider) {}
@@ -77,14 +78,12 @@ public class LiveCardService extends Service {
             criteria.setBearingRequired(false);
             criteria.setSpeedRequired(false);
             List<String> providers = locationManager.getProviders(criteria, true);
-            liveCardViews.setTextViewText(R.id.lat, providers.get(0));
-            liveCard.setViews(liveCardViews);
             for (String provider : providers) {
                 locationManager.requestLocationUpdates(provider,
-                        1000, MIN_DISTANCE, locationListener, Looper.getMainLooper());
+                        MIN_DELAY, MIN_DISTANCE, locationListener, Looper.getMainLooper());
             }
 
-            //handler.post(updateTask);
+            handler.post(updateTask);
         } else {
             liveCard.navigate();
         }
@@ -101,6 +100,15 @@ public class LiveCardService extends Service {
         super.onDestroy();
     }
 
+    private synchronized void updateLiveCardView(Location location) {
+        long age = System.currentTimeMillis() - location.getTime();
+        liveCardViews.setTextViewText(R.id.lat, Double.toString(location.getLatitude()));
+        liveCardViews.setTextViewText(R.id.lng, Double.toString(location.getLongitude()));
+        liveCardViews.setTextViewText(R.id.accuracy, Float.toString(location.getAccuracy()));
+        liveCardViews.setTextViewText(R.id.age, Long.toString(age));
+        liveCard.setViews(liveCardViews);
+    }
+
     private class UpdateLiveCardRunnable implements Runnable {
         private boolean stopped = false;
 
@@ -109,17 +117,14 @@ public class LiveCardService extends Service {
             if (stopped) {
                 return;
             }
-            Location location = locationManager.getLastKnownLocation(
-                    "remote_fused_high_accuracy");
-            if (location != null) {
-                long age = System.currentTimeMillis() - location.getTime();
-                liveCardViews.setTextViewText(R.id.lat, Double.toString(location.getLatitude()));
-                liveCardViews.setTextViewText(R.id.lng, Double.toString(location.getLongitude()));
-                liveCardViews.setTextViewText(R.id.accuracy, Float.toString(location.getAccuracy()));
-                liveCardViews.setTextViewText(R.id.age, Long.toString(age));
-                liveCard.setViews(liveCardViews);
+            if (System.currentTimeMillis() - lastUpdate > AGE_CUTOFF) {
+                Location location = locationManager.getLastKnownLocation(
+                        LocationManager.NETWORK_PROVIDER);
+                if (location != null) {
+                    updateLiveCardView(location);
+                }
             }
-            handler.postDelayed(this, DELAY_MS);
+            handler.postDelayed(this, AGE_CUTOFF);
         }
 
         public void stop() {
