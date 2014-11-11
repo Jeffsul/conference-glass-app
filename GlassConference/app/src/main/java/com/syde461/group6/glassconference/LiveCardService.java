@@ -19,15 +19,18 @@ import android.os.Looper;
 import android.util.Log;
 import android.widget.RemoteViews;
 
+import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,8 +45,15 @@ public class LiveCardService extends Service {
 
     private final Handler handler = new Handler();
     private final UpdateLiveCardRunnable updateTask = new UpdateLiveCardRunnable();
+    private final RunDataCollectionTask collectTask = new RunDataCollectionTask();
+    private final EndDataCollectionTask endTask = new EndDataCollectionTask();
 
-    private static final long MIN_DELAY = 1000;
+    // How long (ms) to collect location data for each trial.
+    private static final long COLLECTION_LENGTH = 30 * 1000;
+    // How long (ms) to delay in between trials.
+    private static final long COLLECTION_DELAY = 120 * 1000;
+
+    private static final long MIN_DELAY = 2000;
     private static final long MIN_DISTANCE = 0;
 
     // When to indicate that location updates have stopped.
@@ -52,8 +62,10 @@ public class LiveCardService extends Service {
     private long lastUpdate;
 
     // Minimum number of location records to post to the server in one HTTP request.
-    private static final int MIN_BATCH_SIZE = 10;
-    private static final String SERVER_POST_PATH = "http://jeffsul.com/post";
+    private static final int MIN_BATCH_SIZE = 5;
+    private static final String SERVER_PATH = "http://conference-glass.herokuapp.com/";
+    private static final String POST_ACTION = "api/positions";
+
     private List<Location> locationRecords =
             Collections.synchronizedList(new ArrayList<Location>());
 
@@ -95,21 +107,29 @@ public class LiveCardService extends Service {
             liveCard.publish(PublishMode.REVEAL);
 
             locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            Criteria criteria = new Criteria();
-            criteria.setAccuracy(Criteria.ACCURACY_FINE);
-                 criteria.setBearingRequired(false);
-            criteria.setSpeedRequired(false);
-            List<String> providers = locationManager.getProviders(criteria, true);
-            for (String provider : providers) {
-                locationManager.requestLocationUpdates(provider,
-                        MIN_DELAY, MIN_DISTANCE, locationListener, Looper.getMainLooper());
-            }
-
-            handler.post(updateTask);
+            handler.post(collectTask);
         } else {
             liveCard.navigate();
         }
         return START_STICKY;
+    }
+
+    private void registerProviders() {
+        Criteria criteria = new Criteria();
+        criteria.setAccuracy(Criteria.ACCURACY_FINE);
+        criteria.setBearingRequired(false);
+        criteria.setSpeedRequired(false);
+        List<String> providers = locationManager.getProviders(criteria, true);
+        for (String provider : providers) {
+            locationManager.requestLocationUpdates(provider,
+                    MIN_DELAY, MIN_DISTANCE, locationListener, Looper.getMainLooper());
+        }
+        handler.post(updateTask);
+    }
+
+    private void unregisterProviders() {
+        locationManager.removeUpdates(locationListener);
+        updateTask.stop();
     }
 
     @Override
@@ -118,6 +138,8 @@ public class LiveCardService extends Service {
             liveCard.unpublish();
             liveCard = null;
             updateTask.stop();
+            collectTask.stop();
+            endTask.stop();
         }
         super.onDestroy();
     }
@@ -132,31 +154,46 @@ public class LiveCardService extends Service {
         synchronized (locationRecords) {
             locationRecords.add(location);
             if (locationRecords.size() >= MIN_BATCH_SIZE) {
-                new SendBatchedLocationsRequest().execute(SERVER_POST_PATH);
+                new SendBatchedLocationsRequest().execute(SERVER_PATH + POST_ACTION);
             }
         }
     }
 
-    private class UpdateLiveCardRunnable implements Runnable {
-        private boolean stopped = false;
-
+    private class UpdateLiveCardRunnable extends StoppableTask {
         @Override
         public void run() {
             if (stopped) {
                 return;
             }
-            if (System.currentTimeMillis() - lastUpdate > AGE_CUTOFF) {
-                Location location = locationManager.getLastKnownLocation(
-                        LocationManager.NETWORK_PROVIDER);
-                if (location != null) {
-                    updateLiveCardView(location);
-                }
+            long age = System.currentTimeMillis() - lastUpdate;
+            if (age > AGE_CUTOFF) {
+                liveCardViews.setTextViewText(R.id.age, Long.toString(age));
+                liveCard.setViews(liveCardViews);
             }
             handler.postDelayed(this, AGE_CUTOFF);
         }
+    }
 
-        public void stop() {
-            stopped = true;
+    private class RunDataCollectionTask extends StoppableTask {
+        @Override
+        public void run() {
+            if (stopped) {
+                return;
+            }
+            Log.e("glass-conf", "STARTING COLLECTION");
+            registerProviders();
+            handler.postDelayed(endTask, COLLECTION_LENGTH);
+        }
+    }
+
+    private class EndDataCollectionTask extends StoppableTask {
+        @Override
+        public void run() {
+            Log.e("glass-conf", "END COLLECTION");
+            unregisterProviders();
+            if (!stopped) {
+                handler.postDelayed(collectTask, COLLECTION_DELAY);
+            }
         }
     }
 
@@ -175,7 +212,8 @@ public class LiveCardService extends Service {
                         locationObj.put("longitude", Double.toString(location.getLongitude()));
                         locationObj.put("accuracy", Float.toString(location.getAccuracy()));
                         locationObj.put("time", Long.toString(location.getTime()));
-                        locationObj.put("provider", location.getProvider());
+                        locationObj.put("direction", "0");
+                        locationObj.put("user_id", "1");
                         holder.put(locationObj);
                     } catch (JSONException e) {
                         Log.e("glass-conf", "JSON error.", e);
@@ -192,11 +230,24 @@ public class LiveCardService extends Service {
             httpPost.setHeader("Accept", "application/json");
             httpPost.setHeader("Content-type", "application/json");
             try {
-                return httpClient.execute(httpPost, new BasicResponseHandler());
+                ResponseHandler<String> responseHandler = new ResponseHandler<String>() {
+                    @Override
+                    public String handleResponse(HttpResponse httpResponse) throws IOException {
+                        return EntityUtils.toString(httpResponse.getEntity());
+                    }
+                };
+                return httpClient.execute(httpPost, responseHandler);
             } catch (Exception e) {
                 Log.e("glass-conf", "Error executing POST request.", e);
             }
             return null;
+        }
+    }
+
+    private abstract static class StoppableTask implements Runnable {
+        protected boolean stopped = false;
+        public void stop() {
+            stopped = true;
         }
     }
 }
