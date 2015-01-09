@@ -3,6 +3,7 @@
 
     <string name="app_name">GlassConference</string>
     <string name="title_activity_live_card_service">GlassConference Demo</string>
+    <string name="action_location_utility">GPS Utility</string>
     <string name="action_stop">Stop</string>
     <string name="loading">...</string>
     <string name="label_age">Age: </string>
