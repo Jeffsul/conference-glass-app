@@ -1,5 +1,6 @@
 package com.syde461.group6.glassconference;
 
+import android.content.Context;
 import android.hardware.SensorManager;
 import android.location.LocationManager;
 
@@ -10,7 +11,16 @@ import android.location.LocationManager;
  */
 public class OrientationManager {
 
-    public OrientationManager(SensorManager sensorManager, LocationManager locationManager) {
+    private static OrientationManager instance;
 
+    public static OrientationManager getInstance() {
+        if (instance == null) {
+            instance = new OrientationManager();
+        }
+        return instance;
+    }
+
+    private OrientationManager() {
+        //locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
     }
 }

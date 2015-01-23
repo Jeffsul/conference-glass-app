@@ -4,6 +4,9 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
 import android.widget.RemoteViews;
 
 import com.google.android.glass.timeline.LiveCard;
@@ -27,7 +30,11 @@ public class BrowseService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (liveCard == null) {
             liveCard = new LiveCard(this, LIVE_CARD_TAG);
+
+            //liveCard.setDirectRenderingEnabled(true).getSurfaceHolder().addCallback(
+            //        new BrowseRenderer(this));
             liveCardViews = new RemoteViews(getPackageName(), R.layout.browse);
+            liveCardViews.setRemoteAdapter(R.id.browse_view, new Intent(this, BrowseUserAdapter.class));
             liveCard.setViews(liveCardViews);
 
             // Display the options menu when the live card is tapped.
