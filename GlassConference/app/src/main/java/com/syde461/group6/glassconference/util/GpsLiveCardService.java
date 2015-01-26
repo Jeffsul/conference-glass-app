@@ -99,7 +99,7 @@ public class GpsLiveCardService extends Service {
         if (liveCard == null) {
             liveCard = new LiveCard(this, LIVE_CARD_TAG);
 
-            liveCardViews = new RemoteViews(getPackageName(), R.layout.live_card);
+            liveCardViews = new RemoteViews(getPackageName(), R.layout.gps_live_card);
             liveCard.setViews(liveCardViews);
 
             // Display the options menu when the live card is tapped.

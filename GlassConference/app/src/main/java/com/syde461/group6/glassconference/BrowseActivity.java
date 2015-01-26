@@ -5,9 +5,12 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.google.android.glass.touchpad.Gesture;
+import com.google.android.glass.touchpad.GestureDetector;
 import com.google.android.glass.widget.CardScrollAdapter;
 import com.google.android.glass.widget.CardScrollView;
 import com.syde461.group6.glassconference.util.GpsLiveCardService;
@@ -21,6 +24,8 @@ import java.util.List;
  */
 public class BrowseActivity extends Activity {
 
+    private GestureDetector gestureDetector;
+
     private List<UserCardBuilder> userCards;
 
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,6 +38,18 @@ public class BrowseActivity extends Activity {
         cardScrollView.setAdapter(adapter);
         cardScrollView.activate();
         setContentView(cardScrollView);
+
+        gestureDetector = new GestureDetector(this).setBaseListener(
+                new GestureDetector.BaseListener() {
+            @Override
+            public boolean onGesture(Gesture gesture) {
+                if (gesture == Gesture.LONG_PRESS) {
+                    openOptionsMenu();
+                    return true;
+                }
+                return false;
+            }
+        });
     }
 
     private void initUserCards() {
@@ -41,6 +58,10 @@ public class BrowseActivity extends Activity {
         for (int i = 1; i <= 10; i++) {
             userCards.add(new UserCardBuilder(this, new User("User " + i)));
         }
+    }
+
+    public boolean onGenericMotionEvent(MotionEvent event) {
+        return gestureDetector.onMotionEvent(event);
     }
 
     @Override

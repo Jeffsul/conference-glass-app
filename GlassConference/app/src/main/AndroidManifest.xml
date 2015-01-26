@@ -20,6 +20,15 @@
             <meta-data android:name="com.google.android.glass.VoiceTrigger"
                 android:resource="@xml/voice_trigger" />
         </activity>
+
+        <service
+            android:name=".util.GpsLiveCardService"
+            android:icon="@drawable/ic_glass_logo"
+            android:label="@string/title_activity_live_card_service" >
+        </service>
+        <activity
+            android:name=".util.GpsLiveCardMenuActivity"
+            android:theme="@style/MenuTheme" />
     </application>
 
 </manifest>
