@@ -1,14 +1,16 @@
-package com.syde461.group6.glassconference;
+package com.syde461.group6.glassconference.util;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.syde461.group6.glassconference.R;
+
 /**
- * A transparent {@link Activity} displaying a "Stop" options menu to remove the {@link LiveCard}.
+ * A transparent {@link Activity} displaying a "Stop" options menu to remove the LiveCard.
  */
-public class LiveCardMenuActivity extends Activity {
+public class GpsLiveCardMenuActivity extends Activity {
 
     @Override
     public void onAttachedToWindow() {
@@ -28,7 +30,7 @@ public class LiveCardMenuActivity extends Activity {
         switch (item.getItemId()) {
             case R.id.action_stop:
                 // Stop the service which will unpublish the live card.
-                stopService(new Intent(this, LiveCardService.class));
+                stopService(new Intent(this, GpsLiveCardService.class));
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

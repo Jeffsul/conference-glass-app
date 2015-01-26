@@ -1,7 +1,8 @@
-package com.syde461.group6.glassconference;
+package com.syde461.group6.glassconference.util;
 
 import com.google.android.glass.timeline.LiveCard;
 import com.google.android.glass.timeline.LiveCard.PublishMode;
+import com.syde461.group6.glassconference.R;
 
 import android.app.PendingIntent;
 import android.app.Service;
@@ -39,7 +40,7 @@ import java.util.List;
 /**
  * A {@link Service} that publishes a {@link LiveCard} in the timeline.
  */
-public class LiveCardService extends Service {
+public class GpsLiveCardService extends Service {
 
     private static final String LIVE_CARD_TAG = "GlassConferenceHelperService";
 
@@ -102,7 +103,7 @@ public class LiveCardService extends Service {
             liveCard.setViews(liveCardViews);
 
             // Display the options menu when the live card is tapped.
-            Intent menuIntent = new Intent(this, LiveCardMenuActivity.class);
+            Intent menuIntent = new Intent(this, GpsLiveCardMenuActivity.class);
             liveCard.setAction(PendingIntent.getActivity(this, 0, menuIntent, 0));
             liveCard.publish(PublishMode.REVEAL);
 

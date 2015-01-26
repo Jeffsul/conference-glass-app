@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.syde461.group6.glassconference.util.GpsLiveCardService;
+
 /**
  * Created by Jeff on 09/01/2015.
  */
@@ -27,7 +29,7 @@ public class BrowseMenuActivity extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_location_utility:
-                startService(new Intent(this, LiveCardService.class));
+                startService(new Intent(this, GpsLiveCardService.class));
                 return true;
             case R.id.action_stop:
                 stopService(new Intent(this, BrowseService.class));
