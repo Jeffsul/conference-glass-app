@@ -12,5 +12,6 @@ public class UserCardBuilder extends CardBuilder {
     public UserCardBuilder(Context context, User user) {
         super(context, Layout.CAPTION);
         setText(user.getName());
+        // TODO(jeffsul): Download and add User image asynchronously.
     }
 }
