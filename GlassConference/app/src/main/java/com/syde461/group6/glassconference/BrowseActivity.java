@@ -13,11 +13,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Jeff on 23/01/2015.
+ * The base activity for the app in Browse mode. The user is presented with a view of nearby
+ * users, according to relative location.
  */
 public class BrowseActivity extends Activity {
 
-    private List<CardBuilder> userCards;
+    private List<UserCardBuilder> userCards;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,11 +33,10 @@ public class BrowseActivity extends Activity {
     }
 
     private void initUserCards() {
-        userCards = new ArrayList<CardBuilder>();
+        userCards = new ArrayList<UserCardBuilder>();
 
         for (int i = 1; i <= 10; i++) {
-            userCards.add(new CardBuilder(this, CardBuilder.Layout.TEXT)
-                    .setText("User " + i));
+            userCards.add(new UserCardBuilder(this, new User("User " + i)));
         }
     }
 
