@@ -21,7 +21,7 @@ public class GpsLiveCardMenuActivity extends Activity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.live_card, menu);
+        getMenuInflater().inflate(R.menu.gps_live_card, menu);
         return true;
     }
 

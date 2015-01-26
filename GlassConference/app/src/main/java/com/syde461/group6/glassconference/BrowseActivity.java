@@ -1,13 +1,16 @@
 package com.syde461.group6.glassconference;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.google.android.glass.widget.CardBuilder;
 import com.google.android.glass.widget.CardScrollAdapter;
 import com.google.android.glass.widget.CardScrollView;
+import com.syde461.group6.glassconference.util.GpsLiveCardService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +40,27 @@ public class BrowseActivity extends Activity {
 
         for (int i = 1; i <= 10; i++) {
             userCards.add(new UserCardBuilder(this, new User("User " + i)));
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Provide menu access to GPS utility.
+        getMenuInflater().inflate(R.menu.browse, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem menuItem) {
+        switch (menuItem.getItemId()) {
+            case R.id.action_location_utility:
+                // Launch GPS utility.
+                // TODO(jeffsul): Make this dependent on startup flags.
+                startService(new Intent(this, GpsLiveCardService.class));
+                return true;
+
+            default:
+                return false;
         }
     }
 
