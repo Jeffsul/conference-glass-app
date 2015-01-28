@@ -8,6 +8,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
@@ -26,7 +27,7 @@ public class BrowseActivity extends Activity {
 
     private GestureDetector gestureDetector;
 
-    private List<UserCardBuilder> userCards;
+    private List<UserCardBuilder> userList;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,10 +54,11 @@ public class BrowseActivity extends Activity {
     }
 
     private void initUserCards() {
-        userCards = new ArrayList<UserCardBuilder>();
+        userList = new ArrayList<UserCardBuilder>();
 
         for (int i = 1; i <= 10; i++) {
-            userCards.add(new UserCardBuilder(this, new User("User " + i)));
+            userList.add(new UserCardBuilder(this,
+                    new User("User " + i, "Google", "Developer", "")));
         }
     }
 
@@ -88,22 +90,22 @@ public class BrowseActivity extends Activity {
     private class UserCardAdapter extends CardScrollAdapter {
         @Override
         public int getCount() {
-            return userCards.size();
+            return userList.size();
         }
 
         @Override
         public Object getItem(int i) {
-            return userCards.get(i);
+            return userList.get(i);
         }
 
         @Override
         public View getView(int i, View convertView, ViewGroup parent) {
-            return userCards.get(i).getView(convertView, parent);
+            return userList.get(i).getView(convertView, parent);
         }
 
         @Override
         public int getPosition(Object o) {
-            return userCards.indexOf(o);
+            return userList.indexOf(o);
         }
     }
 }
