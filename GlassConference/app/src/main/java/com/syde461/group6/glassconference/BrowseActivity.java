@@ -8,7 +8,6 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
@@ -55,10 +54,8 @@ public class BrowseActivity extends Activity {
 
     private void initUserCards() {
         userList = new ArrayList<UserCardBuilder>();
-
-        for (int i = 1; i <= 10; i++) {
-            userList.add(new UserCardBuilder(this,
-                    new User("User " + i, "Google", "Developer", "")));
+        for (User user : UserCache.getInstance().getUsers()) {
+            userList.add(new UserCardBuilder(this, user));
         }
     }
 

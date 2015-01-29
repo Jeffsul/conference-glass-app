@@ -12,8 +12,8 @@ import android.widget.TextView;
  */
 public class UserCardBuilder {
 
-    final Context context;
-    final User user;
+    private final Context context;
+    private final User user;
 
     public UserCardBuilder(Context context, User user) {
         this.context = context;
@@ -36,6 +36,7 @@ public class UserCardBuilder {
 
         ImageView profileView = (ImageView) convertView.findViewById(R.id.user_profile);
         profileView.setImageResource(R.drawable.test_profile);
+
         return convertView;
     }
 }

@@ -37,4 +37,8 @@ public class User {
     public String getImage() {
         return image;
     }
+
+    public String makeKey() {
+        return name + "/" + employer + "/" + position;
+    }
 }
