@@ -16,7 +16,9 @@ import com.google.android.glass.widget.CardScrollView;
 import com.syde461.group6.glassconference.util.GpsLiveCardService;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The base activity for the app in Browse mode. The user is presented with a view of nearby
@@ -26,12 +28,12 @@ public class BrowseActivity extends Activity {
 
     private GestureDetector gestureDetector;
 
-    private List<UserCardBuilder> userList;
+    private UserManager userManager;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        initUserCards();
+        userManager = UserManager.getInstance();
 
         CardScrollView cardScrollView = new CardScrollView(this);
         UserCardAdapter adapter = new UserCardAdapter();
@@ -50,13 +52,6 @@ public class BrowseActivity extends Activity {
                 return false;
             }
         });
-    }
-
-    private void initUserCards() {
-        userList = new ArrayList<UserCardBuilder>();
-        for (User user : UserCache.getInstance().getUsers()) {
-            userList.add(new UserCardBuilder(this, user));
-        }
     }
 
     public boolean onGenericMotionEvent(MotionEvent event) {
@@ -85,24 +80,34 @@ public class BrowseActivity extends Activity {
     }
 
     private class UserCardAdapter extends CardScrollAdapter {
+        private Map<User, UserCardBuilder> userCardBuilderMap =
+                new HashMap<User, UserCardBuilder>();
+
         @Override
         public int getCount() {
-            return userList.size();
+            return userManager.size();
         }
 
         @Override
         public Object getItem(int i) {
-            return userList.get(i);
+            return userManager.get(i);
         }
 
         @Override
         public View getView(int i, View convertView, ViewGroup parent) {
-            return userList.get(i).getView(convertView, parent);
+            User user = userManager.get(i);
+            UserCardBuilder userCardBuilder;
+            if (!userCardBuilderMap.containsKey(user)) {
+                userCardBuilder = new UserCardBuilder(BrowseActivity.this, user);
+            } else {
+                userCardBuilder = userCardBuilderMap.get(user);
+            }
+            return userCardBuilder.getView(convertView, parent);
         }
 
         @Override
         public int getPosition(Object o) {
-            return userList.indexOf(o);
+            return userManager.indexOf((User) o);
         }
     }
 }
