@@ -51,4 +51,8 @@ public class User {
     public String makeKey() {
         return name + "/" + employer + "/" + position;
     }
+
+    public boolean equals(User user) {
+        return makeKey().equals(user.makeKey());
+    }
 }

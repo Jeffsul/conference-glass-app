@@ -7,14 +7,14 @@ import java.util.List;
 /**
  * Singleton storage for User model objects.
  */
-public class UserManager {
+public class UserManager implements ServerFacade.UserUpdateListener {
 
-    private List<User> users;
+    private User[] users;
 
     private List<UserChangeListener> listeners = new ArrayList<UserChangeListener>();
 
     private UserManager() {
-        users = new ArrayList<User>();
+        users = new User[0];
     }
 
     private static UserManager instance;
@@ -22,39 +22,34 @@ public class UserManager {
     public static UserManager getInstance() {
         if (instance == null) {
             instance = new UserManager();
-            prepopulateUsers();
         }
         return instance;
     }
 
-    private static void prepopulateUsers() {
-        for (int i = 0; i < 6; i++) {
-            User dummy = new User("User " + i, "Google", Integer.toString(45*i), "");
-            dummy.setBearing(45 * i);
-            instance.addUser(dummy);
-        }
-    }
-
-    private void addUser(User user) {
-        users.add(user);
-    }
-
     public int size() {
-        return users.size();
+        return users.length;
     }
 
     public int indexOf(User user) {
-        return users.indexOf(user);
+        for (int i = 0; i < users.length; i++) {
+            if (user.equals(users[i])) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     public User get(int index) {
-        return users.get(index);
+        return users[index];
     }
 
     public int getIndexByBearing(double bearing) {
-        double[] bearings = new double[users.size()];
-        for (int i = 0; i < users.size(); i++) {
-            bearings[i] = users.get(i).getBearing();
+        if (users.length == 0) {
+            return 0;
+        }
+        double[] bearings = new double[users.length];
+        for (int i = 0; i < users.length; i++) {
+            bearings[i] = users[i].getBearing();
         }
         int index = -Arrays.binarySearch(bearings, bearing) - 1;
         if (index == bearings.length) {
@@ -78,7 +73,13 @@ public class UserManager {
         listeners.add(listener);
     }
 
+    @Override
+    public void onUserListUpdate(User[] users) {
+        this.users = users;
+        notifyListeners();
+    }
+
     public static interface UserChangeListener {
-        void onUserChange(List<User> users);
+        void onUserChange(final User[] users);
     }
 }

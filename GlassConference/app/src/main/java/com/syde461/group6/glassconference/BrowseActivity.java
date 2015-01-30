@@ -38,9 +38,13 @@ public class BrowseActivity extends Activity {
 
         orientationManager = OrientationManager.initialize(this);
         userManager = UserManager.getInstance();
+        ServerFacade.addListener(userManager);
         orientationManager.addListener(new OrientationManager.OrientationListener() {
             @Override
-            public void onLocationChanged(Location location) {}
+            public void onLocationChanged(Location location) {
+                // TODO(jeffsul): Disassociate this from UI/BrowseActivity.
+                ServerFacade.updateLocation(location);
+            }
 
             @Override
             public void onOrientationChanged(double bearing) {
@@ -72,8 +76,14 @@ public class BrowseActivity extends Activity {
 
         userManager.addListener(new UserManager.UserChangeListener() {
             @Override
-            public void onUserChange(List<User> users) {
-
+            public void onUserChange(User[] users) {
+                int index = cardScrollView.getSelectedItemPosition();
+                if (index >= users.length) {
+                    cardScrollView.animate(users.length - 1, CardScrollView.Animation.DELETION);
+                }
+                if (!users[index].equals(userManager.get(index))) {
+                    cardScrollView.animate(index, CardScrollView.Animation.INSERTION);
+                }
             }
         });
     }
@@ -110,8 +120,8 @@ public class BrowseActivity extends Activity {
     }
 
     private class UserCardAdapter extends CardScrollAdapter {
-        private Map<User, UserCardBuilder> userCardBuilderMap =
-                new HashMap<User, UserCardBuilder>();
+        private Map<String, UserCardBuilder> userCardBuilderMap =
+                new HashMap<String, UserCardBuilder>();
 
         @Override
         public int getCount() {
@@ -127,8 +137,9 @@ public class BrowseActivity extends Activity {
         public View getView(int i, View convertView, ViewGroup parent) {
             User user = userManager.get(i);
             UserCardBuilder userCardBuilder;
-            if (!userCardBuilderMap.containsKey(user)) {
+            if (!userCardBuilderMap.containsKey(user.makeKey())) {
                 userCardBuilder = new UserCardBuilder(BrowseActivity.this, user);
+                userCardBuilderMap.put(user.makeKey(), userCardBuilder);
             } else {
                 userCardBuilder = userCardBuilderMap.get(user);
             }
