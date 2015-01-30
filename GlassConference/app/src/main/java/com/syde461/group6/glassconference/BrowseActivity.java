@@ -1,9 +1,7 @@
 package com.syde461.group6.glassconference;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -37,8 +35,7 @@ public class BrowseActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        orientationManager = OrientationManager.initialize(
-                (SensorManager) getSystemService(Context.SENSOR_SERVICE));
+        orientationManager = OrientationManager.initialize(this);
         userManager = UserManager.getInstance();
         orientationManager.addListener(new OrientationManager.OrientationListener() {
             @Override
@@ -49,6 +46,7 @@ public class BrowseActivity extends Activity {
                 }
             }
         });
+        orientationManager.startTracking();
 
         cardScrollView = new CardScrollView(this);
         UserCardAdapter adapter = new UserCardAdapter();
@@ -74,6 +72,13 @@ public class BrowseActivity extends Activity {
 
             }
         });
+    }
+
+    @Override
+    public void onDestroy() {
+        orientationManager.stopTracking();
+        orientationManager = null;
+        super.onDestroy();
     }
 
     public boolean onGenericMotionEvent(MotionEvent event) {
