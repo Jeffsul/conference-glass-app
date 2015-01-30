@@ -1,7 +1,9 @@
 package com.syde461.group6.glassconference;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -35,7 +37,8 @@ public class BrowseActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        orientationManager = OrientationManager.getInstance();
+        orientationManager = OrientationManager.initialize(
+                (SensorManager) getSystemService(Context.SENSOR_SERVICE));
         userManager = UserManager.getInstance();
         orientationManager.addListener(new OrientationManager.OrientationListener() {
             @Override
