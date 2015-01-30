@@ -15,7 +15,6 @@ import com.google.android.glass.widget.CardScrollAdapter;
 import com.google.android.glass.widget.CardScrollView;
 import com.syde461.group6.glassconference.util.GpsLiveCardService;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,14 +27,27 @@ public class BrowseActivity extends Activity {
 
     private GestureDetector gestureDetector;
 
+    private OrientationManager orientationManager;
     private UserManager userManager;
+
+    private CardScrollView cardScrollView;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        orientationManager = OrientationManager.getInstance();
         userManager = UserManager.getInstance();
+        orientationManager.addListener(new OrientationManager.OrientationListener() {
+            @Override
+            public void onOrientationChanged(double bearing) {
+                int newIndex = userManager.getIndexByBearing(bearing);
+                if (newIndex != cardScrollView.getSelectedItemPosition()) {
+                    cardScrollView.animate(newIndex, CardScrollView.Animation.NAVIGATION);
+                }
+            }
+        });
 
-        CardScrollView cardScrollView = new CardScrollView(this);
+        cardScrollView = new CardScrollView(this);
         UserCardAdapter adapter = new UserCardAdapter();
         cardScrollView.setAdapter(adapter);
         cardScrollView.activate();
@@ -50,6 +62,13 @@ public class BrowseActivity extends Activity {
                     return true;
                 }
                 return false;
+            }
+        });
+
+        userManager.addListener(new UserManager.UserChangeListener() {
+            @Override
+            public void onUserChange(List<User> users) {
+
             }
         });
     }
@@ -73,7 +92,6 @@ public class BrowseActivity extends Activity {
                 // TODO(jeffsul): Make this dependent on startup flags.
                 startService(new Intent(this, GpsLiveCardService.class));
                 return true;
-
             default:
                 return false;
         }

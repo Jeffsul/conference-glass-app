@@ -11,6 +11,8 @@ public class User {
     private final String position;
     private final String image;
 
+    private double bearing;
+
     public User(String name) {
         this(name, "", "", DEFAULT_IMAGE);
     }
@@ -32,6 +34,14 @@ public class User {
 
     public String getPosition() {
         return position;
+    }
+
+    public double getBearing() {
+        return bearing;
+    }
+
+    public void setBearing(double bearing) {
+        this.bearing = bearing;
     }
 
     public String getImage() {
