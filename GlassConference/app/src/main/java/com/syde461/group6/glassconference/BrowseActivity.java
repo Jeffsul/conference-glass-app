@@ -2,6 +2,7 @@ package com.syde461.group6.glassconference;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.location.Location;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -38,6 +39,9 @@ public class BrowseActivity extends Activity {
         orientationManager = OrientationManager.initialize(this);
         userManager = UserManager.getInstance();
         orientationManager.addListener(new OrientationManager.OrientationListener() {
+            @Override
+            public void onLocationChanged(Location location) {}
+
             @Override
             public void onOrientationChanged(double bearing) {
                 int newIndex = userManager.getIndexByBearing(bearing);

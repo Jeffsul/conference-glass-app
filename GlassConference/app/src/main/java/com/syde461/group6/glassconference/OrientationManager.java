@@ -85,9 +85,9 @@ public class OrientationManager {
         @Override
         public void onLocationChanged(Location location) {
             OrientationManager.this.location = location;
-            Log.e("glassconference", location.getLatitude() + ", " + location.getLongitude());
             updateGeomagneticField();
-            // TODO(jeffsul): Notify location change listeners.
+
+            notifyLocationChange();
         }
 
         @Override
@@ -130,8 +130,8 @@ public class OrientationManager {
                 // Convert heading from magnetic to true north.
                 float magneticHeading = (float) Math.toDegrees(orientation[0]);
                 bearing = mod(computeTrueNorth(magneticHeading), 360.0f) - ARM_DISPLACEMENT_DEGREES;
-                Log.e("glassconference", "BEARING: " + bearing);
-                notifyListeners();
+
+                notifyOrientationChange();
             }
         }
 
@@ -173,13 +173,22 @@ public class OrientationManager {
         listeners.add(listener);
     }
 
-    private void notifyListeners() {
+    private void notifyOrientationChange() {
+        Log.e("glassconference", "BEARING: " + bearing);
         for (OrientationListener listener : listeners) {
             listener.onOrientationChanged(bearing);
         }
     }
 
+    private void notifyLocationChange() {
+        Log.e("glassconference", location.getLatitude() + ", " + location.getLongitude());
+        for (OrientationListener listener : listeners) {
+            listener.onLocationChanged(location);
+        }
+    }
+
     public static interface OrientationListener {
+        void onLocationChanged(Location location);
         void onOrientationChanged(double bearing);
     }
 
