@@ -13,8 +13,8 @@ public class User {
 
     private double bearing;
 
-    public User(String name) {
-        this(name, "", "", DEFAULT_IMAGE);
+    public User(String name, String employer, String position) {
+        this(name, employer, position, DEFAULT_IMAGE);
     }
 
     public User(String name, String employer, String position, String image) {

@@ -13,19 +13,10 @@ import java.util.concurrent.TimeUnit;
  * Allows responses to be faked for testing.
  */
 public class ServerFacade {
-
     private static final long FAKE_DELAY = TimeUnit.SECONDS.toMillis(3);
-    private static final User[] FAKE_USERS = {
-            new User("Jeff Sullivan"),
-            new User("Anson Ho"),
-            new User("Catherine Maritan"),
-            new User("Eric Cheng")
-    };
-    private static List<User> fakeUserList = new ArrayList<User>();
-    static {
-        Collections.addAll(fakeUserList, FAKE_USERS);
-    }
+
     private static boolean fake = true;
+    private static FakeEnvironment fakeEnvironment = new FakeEnvironment();
 
     private static List<UserUpdateListener> userListeners =
             new ArrayList<UserUpdateListener>();
@@ -41,11 +32,7 @@ public class ServerFacade {
                 public void run() {
                     User[] users = new User[0];
                     if (fake) {
-                        if (fakeUserList.size() == 4) {
-                            fakeUserList.remove((int) (Math.random() * 4));
-                        }
-                        users = new User[fakeUserList.size()];
-                        fakeUserList.toArray(users);
+                        users = fakeEnvironment.getUsers();
                     }
                     notifyUpdatedUserList(users);
                 }

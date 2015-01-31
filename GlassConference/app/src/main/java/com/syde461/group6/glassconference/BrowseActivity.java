@@ -57,7 +57,7 @@ public class BrowseActivity extends Activity {
         orientationManager.startTracking();
 
         cardScrollView = new CardScrollView(this);
-        UserCardAdapter adapter = new UserCardAdapter();
+        final UserCardAdapter adapter = new UserCardAdapter();
         cardScrollView.setAdapter(adapter);
         cardScrollView.activate();
         setContentView(cardScrollView);
@@ -84,6 +84,7 @@ public class BrowseActivity extends Activity {
                 if (!users[index].equals(userManager.get(index))) {
                     cardScrollView.animate(index, CardScrollView.Animation.INSERTION);
                 }
+                adapter.notifyDataSetChanged();
             }
         });
     }
@@ -141,7 +142,7 @@ public class BrowseActivity extends Activity {
                 userCardBuilder = new UserCardBuilder(BrowseActivity.this, user);
                 userCardBuilderMap.put(user.makeKey(), userCardBuilder);
             } else {
-                userCardBuilder = userCardBuilderMap.get(user);
+                userCardBuilder = userCardBuilderMap.get(user.makeKey());
             }
             return userCardBuilder.getView(convertView, parent);
         }
