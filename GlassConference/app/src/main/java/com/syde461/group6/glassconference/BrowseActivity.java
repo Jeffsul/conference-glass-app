@@ -9,6 +9,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 
 import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
@@ -30,11 +31,16 @@ public class BrowseActivity extends Activity {
 
     private OrientationManager orientationManager;
     private UserManager userManager;
+    private UserCardBuilder[] userCards = new UserCardBuilder[0];
 
     private CardScrollView cardScrollView;
 
+    private double userBearing;
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         orientationManager = OrientationManager.initialize(this);
         userManager = UserManager.getInstance();
@@ -48,6 +54,7 @@ public class BrowseActivity extends Activity {
 
             @Override
             public void onOrientationChanged(double bearing) {
+                userBearing = bearing;
                 int newIndex = userManager.getIndexByBearing(bearing);
                 if (newIndex != cardScrollView.getSelectedItemPosition()) {
                     cardScrollView.animate(newIndex, CardScrollView.Animation.NAVIGATION);
@@ -81,11 +88,20 @@ public class BrowseActivity extends Activity {
                 if (index >= users.length) {
                     cardScrollView.animate(users.length - 1, CardScrollView.Animation.DELETION);
                 }
-                User[] lastUsers = userManager.getLastUsers();
-                if (lastUsers.length > 0 && !users[index].equals(lastUsers[index])) {
-                    cardScrollView.animate(index, CardScrollView.Animation.DELETION);
+                User selectedUser = userCards.length > 0 ? userCards[index].getUser() : null;
+                userCards = new UserCardBuilder[users.length];
+                for (int i = 0; i < userCards.length; i++) {
+                    userCards[i] = new UserCardBuilder(BrowseActivity.this, users[i]);
                 }
-                adapter.notifyDataSetChanged();
+                int newIndex = userManager.getIndexByBearing(userBearing);
+                if (selectedUser != null && userCards.length > 0
+                        && !users[newIndex].equals(selectedUser)) {
+                    cardScrollView.animate(index, CardScrollView.Animation.DELETION);
+                } else if (newIndex != index) {
+                    cardScrollView.animate(newIndex, CardScrollView.Animation.NAVIGATION);
+                } else {
+                    adapter.notifyDataSetChanged();
+                }
             }
         });
     }
@@ -134,30 +150,19 @@ public class BrowseActivity extends Activity {
     }
 
     private class UserCardAdapter extends CardScrollAdapter {
-        private Map<String, UserCardBuilder> userCardBuilderMap =
-                new HashMap<String, UserCardBuilder>();
-
         @Override
         public int getCount() {
-            return userManager.size();
+            return userCards.length;
         }
 
         @Override
         public Object getItem(int i) {
-            return userManager.get(i);
+            return userCards[i];
         }
 
         @Override
         public View getView(int i, View convertView, ViewGroup parent) {
-            User user = userManager.get(i);
-            UserCardBuilder userCardBuilder;
-            if (!userCardBuilderMap.containsKey(user.makeKey())) {
-                userCardBuilder = new UserCardBuilder(BrowseActivity.this, user);
-                userCardBuilderMap.put(user.makeKey(), userCardBuilder);
-            } else {
-                userCardBuilder = userCardBuilderMap.get(user.makeKey());
-            }
-            return userCardBuilder.getView(convertView, parent);
+            return userCards[i].getView(convertView, parent);
         }
 
         @Override

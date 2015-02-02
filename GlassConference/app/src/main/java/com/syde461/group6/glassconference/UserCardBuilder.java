@@ -39,4 +39,8 @@ public class UserCardBuilder {
 
         return convertView;
     }
+
+    public User getUser() {
+        return user;
+    }
 }
