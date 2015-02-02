@@ -90,6 +90,18 @@ public class BrowseActivity extends Activity {
     }
 
     @Override
+    protected void onResume() {
+        orientationManager.startTracking();
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        orientationManager.stopTracking();
+        super.onPause();
+    }
+
+    @Override
     public void onDestroy() {
         orientationManager.stopTracking();
         orientationManager = null;
