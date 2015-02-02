@@ -33,7 +33,7 @@ public class OrientationManager {
     /**
      * The minimum elapsed time desired between location notifications.
      */
-    private static final long MILLIS_BETWEEN_LOCATIONS = TimeUnit.SECONDS.toMillis(3);
+    private static final long MILLIS_BETWEEN_LOCATIONS = TimeUnit.SECONDS.toMillis(2);
 
     /**
      * The sensors used by the compass are mounted in the movable arm on Glass. Depending on how

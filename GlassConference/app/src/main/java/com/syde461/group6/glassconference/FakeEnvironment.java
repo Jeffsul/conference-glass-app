@@ -17,18 +17,11 @@ public class FakeEnvironment {
     private static final long UPDATE_DELAY = TimeUnit.SECONDS.toMillis(2);
 
     private static final User[] FAKE_USERS = {
-            new User("Jeff Sullivan", "Google", "0"),
-            new User("Anson Ho", "University of Waterloo", "1"),
-            new User("Catherine Maritan", "Microsoft", "2"),
-            new User("Eric Cheng", "Uber", "3"),
-            new User("Jeff Sullivan2", "Google", "4"),
-            new User("Anson Ho2", "University of Waterloo", "5"),
-            new User("Catherine Maritan2", "Microsoft", "6"),
-            new User("Eric Cheng2", "Uber", "7"),
-            new User("Jeff Sullivan3", "Google", "8"),
-            new User("Anson Ho3", "University of Waterloo", "9"),
-            new User("Catherine Maritan3", "Microsoft", "10"),
-            new User("Eric Cheng3", "Uber", "11")
+            new User("Jeff Sullivan", "Google", "0", R.drawable.profile_jeff),
+            new User("Anson Ho", "University of Waterloo", "1", R.drawable.profile_anson),
+            new User("Catherine Maritan", "Microsoft", "2", R.drawable.profile_catherine),
+            new User("Eric Cheng", "Uber", "3", R.drawable.profile_eric),
+            new User("Kyle Koerth", "Cars", "4", R.drawable.profile_kyle)
     };
 
     private List<User> fakeUsers = new ArrayList<User>();
@@ -39,7 +32,7 @@ public class FakeEnvironment {
         Collections.addAll(fakeUsers, FAKE_USERS);
         // Set initial bearings.
         for (int i = 0; i < fakeUsers.size(); i++) {
-            fakeUsers.get(i).setBearing(25 * i);
+            fakeUsers.get(i).setBearing(40 * i);
         }
 
         handler = new Handler();

@@ -10,6 +10,7 @@ import java.util.List;
 public class UserManager implements ServerFacade.UserUpdateListener {
 
     private User[] users;
+    private User[] getLastUsers;
 
     private List<UserChangeListener> listeners = new ArrayList<UserChangeListener>();
 
@@ -75,8 +76,13 @@ public class UserManager implements ServerFacade.UserUpdateListener {
 
     @Override
     public void onUserListUpdate(User[] users) {
+        getLastUsers = this.users;
         this.users = users;
         notifyListeners();
+    }
+
+    public User[] getLastUsers() {
+        return getLastUsers;
     }
 
     public static interface UserChangeListener {

@@ -35,7 +35,7 @@ public class UserCardBuilder {
         positionView.setText(user.getPosition());
 
         ImageView profileView = (ImageView) convertView.findViewById(R.id.user_profile);
-        profileView.setImageResource(R.drawable.test_profile);
+        profileView.setImageResource(user.getImage());
 
         return convertView;
     }

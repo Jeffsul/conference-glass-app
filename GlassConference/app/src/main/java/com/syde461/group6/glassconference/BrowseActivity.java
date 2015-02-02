@@ -81,8 +81,9 @@ public class BrowseActivity extends Activity {
                 if (index >= users.length) {
                     cardScrollView.animate(users.length - 1, CardScrollView.Animation.DELETION);
                 }
-                if (!users[index].equals(userManager.get(index))) {
-                    cardScrollView.animate(index, CardScrollView.Animation.INSERTION);
+                User[] lastUsers = userManager.getLastUsers();
+                if (lastUsers.length > 0 && !users[index].equals(lastUsers[index])) {
+                    cardScrollView.animate(index, CardScrollView.Animation.DELETION);
                 }
                 adapter.notifyDataSetChanged();
             }
