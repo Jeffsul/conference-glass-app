@@ -21,6 +21,8 @@
                 android:resource="@xml/voice_trigger" />
         </activity>
 
+        <activity android:name=".DetailsActivity" />
+
         <service
             android:name=".util.GpsLiveCardService"
             android:icon="@drawable/ic_glass_logo"

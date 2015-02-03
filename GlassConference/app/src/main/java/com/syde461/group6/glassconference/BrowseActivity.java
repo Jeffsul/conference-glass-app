@@ -10,6 +10,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.AdapterView;
 
 import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
@@ -40,6 +41,8 @@ public class BrowseActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Stop the display from dimming.d
+        // TODO(jeffsul): Implement timeout?
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         orientationManager = OrientationManager.initialize(this);
@@ -66,6 +69,15 @@ public class BrowseActivity extends Activity {
         cardScrollView = new CardScrollView(this);
         final UserCardAdapter adapter = new UserCardAdapter();
         cardScrollView.setAdapter(adapter);
+        cardScrollView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                Intent intent = new Intent(BrowseActivity.this, DetailsActivity.class);
+                intent.putExtra("user",
+                        userCards[cardScrollView.getSelectedItemPosition()].getUser());
+                startActivity(intent);
+            }
+        });
         cardScrollView.activate();
         setContentView(cardScrollView);
 
