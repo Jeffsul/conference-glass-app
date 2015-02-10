@@ -35,6 +35,12 @@ public class BrowseActivity extends Activity {
 
     private static final long EXIT_INTERACTION_MODE_DELAY = TimeUnit.SECONDS.toMillis(10);
 
+    private static final long MAX_UPDATE_DELAY = TimeUnit.SECONDS.toMillis(8);
+
+    private static final double MAX_DEGREES_BEFORE_UPDATE = 10;
+
+    private long lastUpdateRequest = Long.MAX_VALUE;
+
     private GestureDetector gestureDetector;
 
     private OrientationManager orientationManager;
@@ -44,7 +50,9 @@ public class BrowseActivity extends Activity {
     private CardScrollView cardScrollView;
     private UserCardAdapter adapter;
 
+    private double updateBearing;
     private double userBearing;
+    private Location location;
 
     private Object lock = new Object();
     private int nextIndex;
@@ -77,12 +85,18 @@ public class BrowseActivity extends Activity {
         orientationManager.addListener(new OrientationManager.OrientationListener() {
             @Override
             public void onLocationChanged(Location location) {
+                BrowseActivity.this.location = location;
+                updateBearing = BrowseActivity.this.userBearing;
                 // TODO(jeffsul): Disassociate this from UI/BrowseActivity.
                 ServerFacade.updateLocation(location, userBearing);
             }
 
             @Override
             public void onOrientationChanged(double bearing) {
+                if (Math.abs(bearing - updateBearing) > MAX_DEGREES_BEFORE_UPDATE) {
+                    updateBearing = bearing;
+                    ServerFacade.updateLocation(location, bearing);
+                }
                 if (interactionMode && Math.abs(bearing - userBearing) < 45) {
                     return;
                 }
