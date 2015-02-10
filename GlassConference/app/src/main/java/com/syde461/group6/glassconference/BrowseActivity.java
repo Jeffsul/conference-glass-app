@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -23,31 +24,50 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The base activity for the app in Browse mode. The user is presented with a view of nearby
  * users, according to relative location.
  */
 public class BrowseActivity extends Activity {
+    public static final String TAG = "glassconference";
+
+    private static final long EXIT_INTERACTION_MODE_DELAY = TimeUnit.SECONDS.toMillis(10);
 
     private GestureDetector gestureDetector;
 
     private OrientationManager orientationManager;
     private UserManager userManager;
     private UserCardBuilder[] userCards = new UserCardBuilder[0];
-    private int rootIndex = 0;
 
     private CardScrollView cardScrollView;
+    private UserCardAdapter adapter;
 
-    private double userBearing = 125;
+    private double userBearing;
 
     private Object lock = new Object();
     private int nextIndex;
 
+    private boolean interactionMode;
+
+    private User[] newUsers;
+
+    private Handler handler;
+    private Runnable exitInteractionModeRunnable = new Runnable() {
+        @Override
+        public void run() {
+            interactionMode = false;
+            Log.e(TAG, "Exiting interaction mode.");
+        }
+    };
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Stop the display from dimming.d
+        ServerFacade.initializeDemo(OrientationManager.DEFAULT_LOCATION, 10, 0);
+
+        // Stop the display from dimming.
         // TODO(jeffsul): Implement timeout?
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
@@ -58,31 +78,33 @@ public class BrowseActivity extends Activity {
             @Override
             public void onLocationChanged(Location location) {
                 // TODO(jeffsul): Disassociate this from UI/BrowseActivity.
-                ServerFacade.updateLocation(location);
+                ServerFacade.updateLocation(location, userBearing);
             }
 
             @Override
             public void onOrientationChanged(double bearing) {
+                if (interactionMode && Math.abs(bearing - userBearing) < 45) {
+                    return;
+                }
                 synchronized (lock) {
-                    if (Math.abs(bearing - userBearing) < 10) {
-                        return;
-                    }
-                    Log.e("glassconference", "BEARING: " + bearing);
-                    //userBearing = bearing;
-                    int newIndex = getIndexByBearing(userBearing); //+ rootIndex - mod(rootIndex, userCards.length);
-                    int oldIndex = cardScrollView.getSelectedItemPosition();
+                    int newIndex = getIndexByBearing(bearing);
+                    int oldIndex = mod(cardScrollView.getSelectedItemPosition(), userCards.length);
                     if (newIndex != oldIndex) {
                         nextIndex = newIndex;
-                        cardScrollView.animate(newIndex, CardScrollView.Animation.NAVIGATION);
-                        Log.e("glassconference", "Orientation change: navigating from " + oldIndex + " to " + newIndex);
+                        int animateTo = cardScrollView.getSelectedItemPosition()
+                                + (newIndex - oldIndex);
+                        cardScrollView.animate(animateTo, CardScrollView.Animation.NAVIGATION);
+                        l(String.format("Orientation change: navigating from %d to %d (animate %d)",
+                                oldIndex, newIndex, animateTo));
                     }
+                    userBearing = bearing;
                 }
             }
         });
         orientationManager.startTracking();
 
         cardScrollView = new CardScrollView(this);
-        final UserCardAdapter adapter = new UserCardAdapter();
+        adapter = new UserCardAdapter();
         cardScrollView.setAdapter(adapter);
         cardScrollView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -96,6 +118,7 @@ public class BrowseActivity extends Activity {
         cardScrollView.activate();
         setContentView(cardScrollView);
 
+        handler = new Handler();
         gestureDetector = new GestureDetector(this).setBaseListener(
                 new GestureDetector.BaseListener() {
             @Override
@@ -103,6 +126,11 @@ public class BrowseActivity extends Activity {
                 if (gesture == Gesture.LONG_PRESS) {
                     openOptionsMenu();
                     return true;
+                } else if (gesture == Gesture.SWIPE_LEFT || gesture == Gesture.SWIPE_RIGHT) {
+                    Log.e(TAG, "Entering interaction mode.");
+                    interactionMode = true;
+                    handler.removeCallbacks(exitInteractionModeRunnable);
+                    handler.postDelayed(exitInteractionModeRunnable, EXIT_INTERACTION_MODE_DELAY);
                 }
                 return false;
             }
@@ -112,39 +140,56 @@ public class BrowseActivity extends Activity {
             @Override
             public void onUserChange(User[] users) {
                 synchronized (lock) {
-                    if (cardScrollView.getSelectedItemPosition() != nextIndex) {
-                        return;
+                    newUsers = users;
+                    handler.removeCallbacks(updateUsersRunnable);
+                    if (!updateUsers()) {
+                        handler.postDelayed(updateUsersRunnable, 1000);
                     }
-                    int posn = nextIndex;//cardScrollView.getSelectedItemPosition();
-                    //int index = rootIndex == 0 ? 0 : mod(posn, rootIndex);
-                    //rootIndex = posn;
-                    Log.e("glassconference", "Updating root index: " + rootIndex);
-                    User selectedUser = userCards.length > 0 ? userCards[posn].getUser() : users[0];
-                    userCards = new UserCardBuilder[users.length];
-                    //int newIndex = userManager.getIndexByBearing(userBearing);
-                    //Log.e("glassconference", "New index: " + newIndex + " " + users[newIndex].getName());
-                    int index = 0;
-                    for (int i = 0; i < users.length; i++) {
-                        if (users[i].equals(selectedUser)) {
-                            index = i;
-                            break;
-                        }
-                    }
-                    for (int i = 0; i < userCards.length; i++) {
-                        userCards[mod(i + posn, users.length)] = new UserCardBuilder(BrowseActivity.this,
-                                users[mod(i + index, users.length)]);
-                    }
-//                    if (selectedUser != null && userCards.length > 0
-//                            && !users[newIndex].equals(selectedUser)) {
-//                        cardScrollView.animate(rootIndex, CardScrollView.Animation.DELETION);
-//                        Log.e("glassconference", "Deletion animation: " + rootIndex);
-//                    } else {
-                        adapter.notifyDataSetChanged();
-//                    }
-                    // TODO(jeffsul): What if number of users changes?
                 }
             }
         });
+    }
+
+    private Runnable updateUsersRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (!updateUsers()) {
+                handler.postDelayed(this, 1000);
+            }
+        }
+    };
+
+    private static void l(String msg) {
+        Log.e(TAG, msg);
+    }
+
+    private synchronized boolean updateUsers() {
+        int position = mod(cardScrollView.getSelectedItemPosition(), userCards.length);
+        if (position != nextIndex) {
+            l(String.format("updateUsers: does not match: %d %d", position, nextIndex));
+            return false;
+        }
+        boolean isEmpty = adapter.isEmpty();
+        User selectedUser = !isEmpty ? userCards[nextIndex].getUser() : newUsers[0];
+        userCards = new UserCardBuilder[newUsers.length];
+        int index = 0;
+        for (int i = 0; i < newUsers.length; i++) {
+            if (newUsers[i].equals(selectedUser)) {
+                index = i;
+                break;
+            }
+        }
+        // TODO(jeffsul): What if number of users changes?
+        for (int i = 0; i < userCards.length; i++) {
+            userCards[mod(i + nextIndex, newUsers.length)] = new UserCardBuilder(
+                    BrowseActivity.this,
+                    newUsers[mod(i + index, newUsers.length)]);
+        }
+        adapter.notifyDataSetChanged();
+        if (isEmpty) {
+            cardScrollView.setSelection(userCards.length * 100);
+        }
+        return true;
     }
 
     @Override
@@ -198,12 +243,12 @@ public class BrowseActivity extends Activity {
 
         @Override
         public Object getItem(int i) {
-            return userCards[mod(i - rootIndex, userCards.length)];
+            return userCards[mod(i, userCards.length)];
         }
 
         @Override
         public View getView(int i, View convertView, ViewGroup parent) {
-            return userCards[mod(i - rootIndex, userCards.length)].getView(convertView, parent);
+            return userCards[mod(i, userCards.length)].getView(convertView, parent);
         }
 
         @Override
@@ -250,15 +295,5 @@ public class BrowseActivity extends Activity {
                     ? bearings.length - 1 : 0;
         }
         return 0;
-//        int index = -Arrays.binarySearch(bearings, bearing) - 1;
-//        if (index == bearings.length) {
-//            // Special case: wrap-around from 360 to 0.
-//            return bearing - bearings[index - 1] <= bearings[0] + 360 - bearing ? index - 1 : 0;
-//        } else if (index == 0) {
-//            // Special case: wrap-around from 0 to 360.
-//            return bearings[0] - bearing <= bearing - bearings[bearings.length - 1] + 360 ?
-//                    0 : bearings.length - 1;
-//        }
-//        return bearings[index] - bearing <= bearing - bearings[index - 1] ? index : index - 1;
     }
 }

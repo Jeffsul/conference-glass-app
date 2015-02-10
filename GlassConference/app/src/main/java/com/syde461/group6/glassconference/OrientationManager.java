@@ -44,7 +44,7 @@ public class OrientationManager {
      */
     private static final int ARM_DISPLACEMENT_DEGREES = 6;
 
-    private static final Location DEFAULT_LOCATION = new Location("");
+    public static final Location DEFAULT_LOCATION = new Location("");
     static {
         DEFAULT_LOCATION.setLatitude(43.483126983087026);
         DEFAULT_LOCATION.setLongitude(-80.53417685449173);
