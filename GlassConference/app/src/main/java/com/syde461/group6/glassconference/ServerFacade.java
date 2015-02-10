@@ -145,8 +145,7 @@ public class ServerFacade {
                 ResponseHandler<String> responseHandler = new ResponseHandler<String>() {
                     @Override
                     public String handleResponse(HttpResponse httpResponse) throws IOException {
-                        String resp = EntityUtils.toString(httpResponse.getEntity());
-                        return resp;
+                        return EntityUtils.toString(httpResponse.getEntity());
                     }
                 };
                 return httpClient.execute(httpPost, responseHandler);
@@ -158,18 +157,27 @@ public class ServerFacade {
 
         @Override
         protected void onPostExecute(String result) {
+            Log.e("glassconference", "UpdateLocationResult: " + result);
             try {
                 JSONObject resp = new JSONObject(result);
                 User[] users = new User[10];
                 for (int i = 0; i < 10; i++) {
-                    JSONObject userObj = resp.getJSONObject(Integer.toString(i));
-                    users[i] = new User(userObj.getString("name"), "Test", "Test");
-                    users[i].setBearing(userObj.getDouble("bearing"));
+                    JSONObject obj = resp.getJSONObject(Integer.toString(i));
+                    String name = "";
+                    if (obj.has("name")) {
+                        name = obj.getString("name");
+                    }
+                    double bearing = 0;
+                    if (obj.has("bearing")) {
+                        bearing = obj.getDouble("bearing");
+                    }
+                    users[i] = new User(name, "Test" + i, "Test" + i);
+                    users[i].setBearing(bearing);
                 }
                 notifyUpdatedUserList(users);
                 Log.e("glassconference", resp.toString());
             } catch (JSONException e) {
-                e.printStackTrace();
+                Log.e("glassconference", "Error parsing JSON from updateLocationTask.", e);
             }
         }
     }
