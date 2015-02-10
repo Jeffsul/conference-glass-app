@@ -11,6 +11,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
@@ -33,7 +34,7 @@ public class OrientationManager {
     /**
      * The minimum elapsed time desired between location notifications.
      */
-    private static final long MILLIS_BETWEEN_LOCATIONS = TimeUnit.SECONDS.toMillis(2);
+    private static final long MILLIS_BETWEEN_LOCATIONS = TimeUnit.SECONDS.toMillis(1);
 
     /**
      * The sensors used by the compass are mounted in the movable arm on Glass. Depending on how
@@ -43,6 +44,15 @@ public class OrientationManager {
      */
     private static final int ARM_DISPLACEMENT_DEGREES = 6;
 
+    private static final Location DEFAULT_LOCATION = new Location("");
+    static {
+        DEFAULT_LOCATION.setLatitude(43.483126983087026);
+        DEFAULT_LOCATION.setLongitude(-80.53417685449173);
+    }
+    private static boolean fake = true;
+
+    private Handler handler;
+
     private List<OrientationListener> listeners = new ArrayList<OrientationListener>();
 
     private double bearing;
@@ -50,7 +60,7 @@ public class OrientationManager {
     private final SensorManager sensorManager;
     private final float[] rotationMatrix;
     private final float[] orientation;
-    private Location location;
+    private Location location = DEFAULT_LOCATION;
     private GeomagneticField geomagneticField;
     private float pitch;
 
@@ -150,10 +160,23 @@ public class OrientationManager {
                 SensorManager.SENSOR_DELAY_UI);
     }
 
+    private Runnable fakeUpdater = new Runnable() {
+        @Override
+        public void run() {
+            notifyLocationChange();
+            handler.postDelayed(this, MILLIS_BETWEEN_LOCATIONS);
+        }
+    };
+
     public void startTracking() {
         if (!isTracking) {
             registerSensorListener();
-            registerLocationListener();
+            if (!fake) {
+                registerLocationListener();
+            } else {
+                handler = new Handler();
+                handler.post(fakeUpdater);
+            }
 
             // TODO(jeffsul): Check last known location on start.
 
@@ -164,7 +187,11 @@ public class OrientationManager {
     public void stopTracking() {
         if (isTracking) {
             sensorManager.unregisterListener(sensorListener);
-            locationManager.removeUpdates(locationListener);
+            if (!fake) {
+                locationManager.removeUpdates(locationListener);
+            } else {
+                handler.removeCallbacks(fakeUpdater);
+            }
             isTracking = false;
         }
     }
@@ -174,7 +201,7 @@ public class OrientationManager {
     }
 
     private void notifyOrientationChange() {
-        Log.e("glassconference", "BEARING: " + bearing);
+        //Log.e("glassconference", "BEARING: " + bearing);
         for (OrientationListener listener : listeners) {
             listener.onOrientationChanged(bearing);
         }

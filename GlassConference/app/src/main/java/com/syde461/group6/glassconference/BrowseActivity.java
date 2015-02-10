@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -33,10 +34,13 @@ public class BrowseActivity extends Activity {
     private OrientationManager orientationManager;
     private UserManager userManager;
     private UserCardBuilder[] userCards = new UserCardBuilder[0];
+    private int rootIndex = 0;
 
     private CardScrollView cardScrollView;
 
-    private double userBearing;
+    private double userBearing = 125;
+
+    private Object lock = new Object();
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,10 +61,18 @@ public class BrowseActivity extends Activity {
 
             @Override
             public void onOrientationChanged(double bearing) {
-                userBearing = bearing;
-                int newIndex = userManager.getIndexByBearing(bearing);
-                if (newIndex != cardScrollView.getSelectedItemPosition()) {
-                    cardScrollView.animate(newIndex, CardScrollView.Animation.NAVIGATION);
+                synchronized (lock) {
+                    if (Math.abs(bearing - userBearing) < 10) {
+                        return;
+                    }
+                    Log.e("glassconference", "BEARING: " + bearing);
+                    //userBearing = bearing;
+                    int newIndex = userManager.getIndexByBearing(userBearing) + rootIndex - mod(rootIndex, userCards.length);
+                    int oldIndex = cardScrollView.getSelectedItemPosition();
+                    if (newIndex != oldIndex) {
+                        cardScrollView.animate(newIndex, CardScrollView.Animation.NAVIGATION);
+                        Log.e("glassconference", "Orientation change: navigating from " + oldIndex + " to " + newIndex);
+                    }
                 }
             }
         });
@@ -96,23 +108,26 @@ public class BrowseActivity extends Activity {
         userManager.addListener(new UserManager.UserChangeListener() {
             @Override
             public void onUserChange(User[] users) {
-                int index = cardScrollView.getSelectedItemPosition();
-                if (index >= users.length) {
-                    cardScrollView.animate(users.length - 1, CardScrollView.Animation.DELETION);
-                }
-                User selectedUser = userCards.length > 0 ? userCards[index].getUser() : null;
-                userCards = new UserCardBuilder[users.length];
-                for (int i = 0; i < userCards.length; i++) {
-                    userCards[i] = new UserCardBuilder(BrowseActivity.this, users[i]);
-                }
-                int newIndex = userManager.getIndexByBearing(userBearing);
-                if (selectedUser != null && userCards.length > 0
-                        && !users[newIndex].equals(selectedUser)) {
-                    cardScrollView.animate(index, CardScrollView.Animation.DELETION);
-                } else if (newIndex != index) {
-                    cardScrollView.animate(newIndex, CardScrollView.Animation.NAVIGATION);
-                } else {
-                    adapter.notifyDataSetChanged();
+                synchronized (lock) {
+                    int posn = cardScrollView.getSelectedItemPosition();
+                    int index = rootIndex == 0 ? 0 : mod(posn, rootIndex);
+                    rootIndex = posn;
+                    Log.e("glassconference", "Updating root index: " + rootIndex);
+                    User selectedUser = userCards.length > 0 ? userCards[index].getUser() : users[0];
+                    userCards = new UserCardBuilder[users.length];
+                    int newIndex = userManager.getIndexByBearing(userBearing);
+                    Log.e("glassconference", "New index: " + newIndex + " " + users[newIndex].getName());
+                    for (int i = 0; i < userCards.length; i++) {
+                        userCards[i] = new UserCardBuilder(BrowseActivity.this,
+                                users[mod(i + newIndex, users.length)]);
+                    }
+                    if (selectedUser != null && userCards.length > 0
+                            && !users[newIndex].equals(selectedUser)) {
+                        cardScrollView.animate(rootIndex, CardScrollView.Animation.DELETION);
+                        Log.e("glassconference", "Deletion animation: " + rootIndex);
+                    } else {
+                        adapter.notifyDataSetChanged();
+                    }
                 }
             }
         });
@@ -164,22 +179,37 @@ public class BrowseActivity extends Activity {
     private class UserCardAdapter extends CardScrollAdapter {
         @Override
         public int getCount() {
-            return userCards.length;
+            return userCards.length > 0 ? Integer.MAX_VALUE : 0;
         }
 
         @Override
         public Object getItem(int i) {
-            return userCards[i];
+            return userCards[mod(i - rootIndex, userCards.length)];
         }
 
         @Override
         public View getView(int i, View convertView, ViewGroup parent) {
-            return userCards[i].getView(convertView, parent);
+            return userCards[mod(i - rootIndex, userCards.length)].getView(convertView, parent);
         }
 
         @Override
         public int getPosition(Object o) {
             return userManager.indexOf((User) o);
         }
+    }
+
+    /**
+     * From: https://github.com/googleglass/gdk-compass-sample/blob/master/app/src/main/java/com/
+     *              google/android/glass/sample/compass/util/MathUtils.java
+     *
+     * Calculates {@code a mod b} in a way that respects negative values (for example,
+     * {@code mod(-1, 5) == 4}, rather than {@code -1}).
+     *
+     * @param a the dividend
+     * @param b the divisor
+     * @return {@code a mod b}
+     */
+    private static int mod(int a, int b) {
+        return b == 0 ? 0 : (a % b + b) % b;
     }
 }

@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
  * Allows responses to be faked for testing.
  */
 public class ServerFacade {
-    private static final long FAKE_DELAY = TimeUnit.SECONDS.toMillis(3);
+    private static final long FAKE_DELAY = TimeUnit.SECONDS.toMillis(1);
 
     private static boolean fake = true;
     private static FakeEnvironment fakeEnvironment = new FakeEnvironment();
