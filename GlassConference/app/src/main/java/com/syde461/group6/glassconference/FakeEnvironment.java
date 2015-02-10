@@ -40,7 +40,7 @@ public class FakeEnvironment {
             @Override
             public void run() {
                 User mover = fakeUsers.get(0);
-                mover.setBearing(mover.getBearing() + 10);
+                mover.setBearing(mover.getBearing() + 13);
                 handler.postDelayed(this, UPDATE_DELAY);
             }
         }, UPDATE_DELAY);

@@ -19,6 +19,7 @@ import com.google.android.glass.widget.CardScrollAdapter;
 import com.google.android.glass.widget.CardScrollView;
 import com.syde461.group6.glassconference.util.GpsLiveCardService;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ public class BrowseActivity extends Activity {
     private double userBearing = 125;
 
     private Object lock = new Object();
+    private int nextIndex;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,9 +69,10 @@ public class BrowseActivity extends Activity {
                     }
                     Log.e("glassconference", "BEARING: " + bearing);
                     //userBearing = bearing;
-                    int newIndex = userManager.getIndexByBearing(userBearing) + rootIndex - mod(rootIndex, userCards.length);
+                    int newIndex = getIndexByBearing(userBearing); //+ rootIndex - mod(rootIndex, userCards.length);
                     int oldIndex = cardScrollView.getSelectedItemPosition();
                     if (newIndex != oldIndex) {
+                        nextIndex = newIndex;
                         cardScrollView.animate(newIndex, CardScrollView.Animation.NAVIGATION);
                         Log.e("glassconference", "Orientation change: navigating from " + oldIndex + " to " + newIndex);
                     }
@@ -109,25 +112,36 @@ public class BrowseActivity extends Activity {
             @Override
             public void onUserChange(User[] users) {
                 synchronized (lock) {
-                    int posn = cardScrollView.getSelectedItemPosition();
-                    int index = rootIndex == 0 ? 0 : mod(posn, rootIndex);
-                    rootIndex = posn;
+                    if (cardScrollView.getSelectedItemPosition() != nextIndex) {
+                        return;
+                    }
+                    int posn = nextIndex;//cardScrollView.getSelectedItemPosition();
+                    //int index = rootIndex == 0 ? 0 : mod(posn, rootIndex);
+                    //rootIndex = posn;
                     Log.e("glassconference", "Updating root index: " + rootIndex);
-                    User selectedUser = userCards.length > 0 ? userCards[index].getUser() : users[0];
+                    User selectedUser = userCards.length > 0 ? userCards[posn].getUser() : users[0];
                     userCards = new UserCardBuilder[users.length];
-                    int newIndex = userManager.getIndexByBearing(userBearing);
-                    Log.e("glassconference", "New index: " + newIndex + " " + users[newIndex].getName());
+                    //int newIndex = userManager.getIndexByBearing(userBearing);
+                    //Log.e("glassconference", "New index: " + newIndex + " " + users[newIndex].getName());
+                    int index = 0;
+                    for (int i = 0; i < users.length; i++) {
+                        if (users[i].equals(selectedUser)) {
+                            index = i;
+                            break;
+                        }
+                    }
                     for (int i = 0; i < userCards.length; i++) {
-                        userCards[i] = new UserCardBuilder(BrowseActivity.this,
-                                users[mod(i + newIndex, users.length)]);
+                        userCards[mod(i + posn, users.length)] = new UserCardBuilder(BrowseActivity.this,
+                                users[mod(i + index, users.length)]);
                     }
-                    if (selectedUser != null && userCards.length > 0
-                            && !users[newIndex].equals(selectedUser)) {
-                        cardScrollView.animate(rootIndex, CardScrollView.Animation.DELETION);
-                        Log.e("glassconference", "Deletion animation: " + rootIndex);
-                    } else {
+//                    if (selectedUser != null && userCards.length > 0
+//                            && !users[newIndex].equals(selectedUser)) {
+//                        cardScrollView.animate(rootIndex, CardScrollView.Animation.DELETION);
+//                        Log.e("glassconference", "Deletion animation: " + rootIndex);
+//                    } else {
                         adapter.notifyDataSetChanged();
-                    }
+//                    }
+                    // TODO(jeffsul): What if number of users changes?
                 }
             }
         });
@@ -211,5 +225,40 @@ public class BrowseActivity extends Activity {
      */
     private static int mod(int a, int b) {
         return b == 0 ? 0 : (a % b + b) % b;
+    }
+
+    public int getIndexByBearing(double bearing) {
+        if (userCards.length == 0) {
+            return 0;
+        }
+        double[] bearings = new double[userCards.length];
+        for (int i = 0; i < userCards.length; i++) {
+            bearings[i] = userCards[i].getUser().getBearing();
+        }
+        int index = 0;
+        for (int i = 0; i < bearings.length - 1; i++) {
+            if (bearing > bearings[i] && bearing < bearings[i + 1]) {
+                return bearing - bearings[i] < bearings[i + 1] - bearing ? i : i + 1;
+            }
+        }
+        if (bearing < bearings[0]) {
+            return bearings[0] - bearing < bearing + 360 - bearings[bearings.length - 1]
+                    ? 0 : bearings.length - 1;
+        }
+        if (bearing > bearings[bearings.length - 1]) {
+            return bearing - bearings[bearings.length - 1] < bearings[0] - bearing + 360
+                    ? bearings.length - 1 : 0;
+        }
+        return 0;
+//        int index = -Arrays.binarySearch(bearings, bearing) - 1;
+//        if (index == bearings.length) {
+//            // Special case: wrap-around from 360 to 0.
+//            return bearing - bearings[index - 1] <= bearings[0] + 360 - bearing ? index - 1 : 0;
+//        } else if (index == 0) {
+//            // Special case: wrap-around from 0 to 360.
+//            return bearings[0] - bearing <= bearing - bearings[bearings.length - 1] + 360 ?
+//                    0 : bearings.length - 1;
+//        }
+//        return bearings[index] - bearing <= bearing - bearings[index - 1] ? index : index - 1;
     }
 }
