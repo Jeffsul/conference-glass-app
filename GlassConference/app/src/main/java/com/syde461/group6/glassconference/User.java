@@ -15,6 +15,7 @@ public class User implements Parcelable {
     private final int image;
 
     private double bearing;
+    private double distance;
 
     public User(String name, String employer, String position) {
         this(name, employer, position, DEFAULT_IMAGE);
@@ -45,6 +46,14 @@ public class User implements Parcelable {
 
     public void setBearing(double bearing) {
         this.bearing = bearing;
+    }
+
+    public double getDistance() {
+        return distance;
+    }
+
+    public void setDistance(double distance) {
+        this.distance = distance;
     }
 
     public int getImage() {

@@ -88,14 +88,14 @@ public class BrowseActivity extends Activity {
                 BrowseActivity.this.location = location;
                 updateBearing = BrowseActivity.this.userBearing;
                 // TODO(jeffsul): Disassociate this from UI/BrowseActivity.
-                ServerFacade.updateLocation(location, userBearing);
+                makeLocationUpdateRequest();
             }
 
             @Override
             public void onOrientationChanged(double bearing) {
                 if (Math.abs(bearing - updateBearing) > MAX_DEGREES_BEFORE_UPDATE) {
                     updateBearing = bearing;
-                    ServerFacade.updateLocation(location, bearing);
+                    makeLocationUpdateRequest();
                 }
                 if (interactionMode && Math.abs(bearing - userBearing) < 45) {
                     return;
@@ -125,7 +125,8 @@ public class BrowseActivity extends Activity {
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 Intent intent = new Intent(BrowseActivity.this, DetailsActivity.class);
                 intent.putExtra("user",
-                        userCards[cardScrollView.getSelectedItemPosition()].getUser());
+                        userCards[mod(cardScrollView.getSelectedItemPosition(), userCards.length)]
+                                .getUser());
                 startActivity(intent);
             }
         });
@@ -172,6 +173,12 @@ public class BrowseActivity extends Activity {
             }
         }
     };
+
+    private void makeLocationUpdateRequest() {
+        if (location != null) {
+            ServerFacade.updateLocation(location, updateBearing);
+        }
+    }
 
     private static void l(String msg) {
         Log.e(TAG, msg);

@@ -12,13 +12,16 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -159,20 +162,29 @@ public class ServerFacade {
         protected void onPostExecute(String result) {
             Log.e("glassconference", "UpdateLocationResult: " + result);
             try {
-                JSONObject resp = new JSONObject(result);
-                User[] users = new User[10];
-                for (int i = 0; i < 10; i++) {
-                    JSONObject obj = resp.getJSONObject(Integer.toString(i));
+                JSONArray resp = new JSONArray(result);
+                User[] users = new User[resp.length()];
+                for (int i = 0; i < users.length; i++) {
+                    JSONObject obj = resp.getJSONObject(i);
                     String name = "";
                     if (obj.has("name")) {
                         name = obj.getString("name");
+                    }
+                    String company = "";
+                    if (obj.has("company")) {
+                        company = obj.getString("company");
                     }
                     double bearing = 0;
                     if (obj.has("bearing")) {
                         bearing = obj.getDouble("bearing");
                     }
-                    users[i] = new User(name, "Test" + i, "Test" + i);
+                    double distance = 0;
+                    if (obj.has("distance")) {
+                        distance = obj.getDouble("distance");
+                    }
+                    users[i] = new User(name, company, "Test" + i);
                     users[i].setBearing(bearing);
+                    users[i].setDistance(distance);
                 }
                 notifyUpdatedUserList(users);
                 Log.e("glassconference", resp.toString());
@@ -187,6 +199,12 @@ public class ServerFacade {
     }
 
     private static void notifyUpdatedUserList(User[] users) {
+        Arrays.sort(users, new Comparator<User>() {
+            @Override
+            public int compare(User user1, User user2) {
+                return user1.getBearing() >= user2.getBearing() ? 1 : -1;
+            }
+        });
         for (UserUpdateListener listener : userListeners) {
             listener.onUserListUpdate(users);
         }
