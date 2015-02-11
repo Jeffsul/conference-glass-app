@@ -98,6 +98,10 @@ public class ServerFacade {
     }
 
     public static void updateLocation(Location location, double bearing) {
+        updateLocation(location, bearing, 0);
+    }
+
+    public static void updateLocation(Location location, double bearing, int selectedId) {
         if (fake) {
             Handler handler = new Handler();
             handler.postDelayed(new Runnable() {
@@ -111,17 +115,19 @@ public class ServerFacade {
                 }
             }, FAKE_DELAY);
         } else {
-            new UpdateLocationTask(location, bearing).execute(UPDATE_LOCATION_URL);
+            new UpdateLocationTask(location, bearing, selectedId).execute(UPDATE_LOCATION_URL);
         }
     }
 
     private static class UpdateLocationTask extends AsyncTask<String, String, String> {
         private final Location location;
         private final double bearing;
+        private final int selectedId;
 
-        public UpdateLocationTask(Location location, double bearing) {
+        public UpdateLocationTask(Location location, double bearing, int selectedId) {
             this.location = location;
             this.bearing = bearing;
+            this.selectedId = selectedId;
         }
 
         @Override
@@ -133,6 +139,7 @@ public class ServerFacade {
                 jsonObject.put("latitude", location.getLatitude());
                 jsonObject.put("longitude", location.getLongitude());
                 jsonObject.put("direction", bearing);
+                jsonObject.put("selected_id", selectedId);
             } catch (JSONException e) {
                 Log.e("glassconference", "Error creating JSON", e);
             }
@@ -166,6 +173,7 @@ public class ServerFacade {
                 User[] users = new User[resp.length()];
                 for (int i = 0; i < users.length; i++) {
                     JSONObject obj = resp.getJSONObject(i);
+                    int id = obj.getInt("id");
                     String name = "";
                     if (obj.has("name")) {
                         name = obj.getString("name");
@@ -182,7 +190,7 @@ public class ServerFacade {
                     if (obj.has("distance")) {
                         distance = obj.getDouble("distance");
                     }
-                    users[i] = new User(name, company, "Test" + i);
+                    users[i] = new User(id, name, company, "Test" + i);
                     users[i].setBearing(bearing);
                     users[i].setDistance(distance);
                 }

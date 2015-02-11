@@ -9,6 +9,7 @@ import android.os.Parcelable;
 public class User implements Parcelable {
     private static final int DEFAULT_IMAGE = R.drawable.profile_default;
 
+    private final int id;
     private final String name;
     private final String employer;
     private final String position;
@@ -17,15 +18,20 @@ public class User implements Parcelable {
     private double bearing;
     private double distance;
 
-    public User(String name, String employer, String position) {
-        this(name, employer, position, DEFAULT_IMAGE);
+    public User(int id, String name, String employer, String position) {
+        this(id, name, employer, position, DEFAULT_IMAGE);
     }
 
-    public User(String name, String employer, String position, int image) {
+    public User(int id, String name, String employer, String position, int image) {
+        this.id = id;
         this.name = name;
         this.employer = employer;
         this.position = position;
         this.image = image;
+    }
+
+    public int getId() {
+        return id;
     }
 
     public String getName() {
@@ -61,7 +67,7 @@ public class User implements Parcelable {
     }
 
     public String makeKey() {
-        return name + "/" + employer + "/" + position;
+        return id + "/" + name;
     }
 
     public boolean equals(User user) {
@@ -75,6 +81,7 @@ public class User implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(id);
         dest.writeString(name);
         dest.writeString(employer);
         dest.writeString(position);
@@ -94,6 +101,7 @@ public class User implements Parcelable {
     };
 
     public User(Parcel pc) {
+        this.id = pc.readInt();
         this.name = pc.readString();
         this.employer = pc.readString();
         this.position = pc.readString();

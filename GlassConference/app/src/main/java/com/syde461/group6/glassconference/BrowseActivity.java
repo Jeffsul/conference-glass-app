@@ -176,7 +176,11 @@ public class BrowseActivity extends Activity {
 
     private void makeLocationUpdateRequest() {
         if (location != null) {
-            ServerFacade.updateLocation(location, updateBearing);
+            int selectedId = 0;
+            if (userCards.length > 0) {
+                selectedId = userCards[getIndexByBearing(updateBearing)].getUser().getId();
+            }
+            ServerFacade.updateLocation(location, updateBearing, selectedId);
         }
     }
 
