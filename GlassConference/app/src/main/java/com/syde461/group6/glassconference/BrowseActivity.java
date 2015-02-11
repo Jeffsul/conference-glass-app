@@ -293,28 +293,46 @@ public class BrowseActivity extends Activity {
         return b == 0 ? 0 : (a % b + b) % b;
     }
 
+    private static final double SCOPE = 10;
+
     public int getIndexByBearing(double bearing) {
         if (userCards.length == 0) {
             return 0;
         }
+        int index = -1;
         double[] bearings = new double[userCards.length];
         for (int i = 0; i < userCards.length; i++) {
             bearings[i] = userCards[i].getUser().getBearing();
         }
-        int index = 0;
         for (int i = 0; i < bearings.length - 1; i++) {
             if (bearing > bearings[i] && bearing < bearings[i + 1]) {
-                return bearing - bearings[i] < bearings[i + 1] - bearing ? i : i + 1;
+                int a = i;
+                int b = i + 1;
+                index = bearing - bearings[a] < bearings[b] - bearing ? a : b;
+                if (bearing - bearings[a] < SCOPE && bearings[b] - bearing < SCOPE) {
+                    index = userCards[a].getUser().getDistance() < userCards[b].getUser().getDistance()
+                            ? a : b;
+                }
             }
         }
         if (bearing < bearings[0]) {
-            return bearings[0] - bearing < bearing + 360 - bearings[bearings.length - 1]
-                    ? 0 : bearings.length - 1;
+            int a = 0;
+            int b = bearings.length - 1;
+            index = bearings[a] - bearing < bearing + 360 - bearings[b] ? a : b;
+            if (bearings[a] - bearing < SCOPE && bearing + 360 - bearings[b] < SCOPE) {
+                index = userCards[a].getUser().getDistance() < userCards[b].getUser().getDistance()
+                        ? a : b;
+            }
         }
         if (bearing > bearings[bearings.length - 1]) {
-            return bearing - bearings[bearings.length - 1] < bearings[0] - bearing + 360
-                    ? bearings.length - 1 : 0;
+            int a = bearings.length - 1;
+            int b = 0;
+            index = bearing - bearings[a] < bearings[b] - bearing + 360 ? a : b;
+            if (bearing - bearings[a] < SCOPE && bearings[b] - bearing + 360 < SCOPE) {
+                index = userCards[a].getUser().getDistance() < userCards[b].getUser().getDistance()
+                        ? a : b;
+            }
         }
-        return 0;
+        return index;
     }
 }
