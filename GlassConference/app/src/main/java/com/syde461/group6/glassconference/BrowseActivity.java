@@ -37,6 +37,8 @@ public class BrowseActivity extends Activity {
 
     private static final long MAX_UPDATE_DELAY = TimeUnit.SECONDS.toMillis(8);
 
+    private static final int OFFSET = 200;
+
     private static final double MAX_DEGREES_BEFORE_UPDATE = 10;
 
     private long lastUpdateRequest = Long.MAX_VALUE;
@@ -103,9 +105,9 @@ public class BrowseActivity extends Activity {
                     return;
                 }
                 synchronized (lock) {
-                    int newIndex = getIndexByBearing(bearing);
+                    int newIndex = getIndexByBearing(bearing, userCards);
                     int oldIndex = mod(cardScrollView.getSelectedItemPosition(), userCards.length);
-                    l(String.format("Old: %d to New: %d", oldIndex, newIndex));
+                    l(String.format("Old: %d to New: %d (bearing=" + Math.round(bearing) + ")", oldIndex, newIndex));
                     if (newIndex != oldIndex) {
                         nextIndex = newIndex;
                         int animateTo = cardScrollView.getSelectedItemPosition()
@@ -181,7 +183,7 @@ public class BrowseActivity extends Activity {
         if (location != null) {
             int selectedId = 0;
             if (userCards.length > 0) {
-                selectedId = userCards[getIndexByBearing(updateBearing)].getUser().getId();
+                selectedId = userCards[getIndexByBearing(updateBearing, userCards)].getUser().getId();
             }
             l("Making location update request: " + updateBearing);
             ServerFacade.updateLocation(location, updateBearing, selectedId);
@@ -200,8 +202,10 @@ public class BrowseActivity extends Activity {
         }
         boolean isEmpty = userCards.length == 0;
         User selectedUser = !isEmpty ? userCards[nextIndex].getUser() : newUsers[0];
+        l("Selected User: " + selectedUser.getName());
+        l("Next Index: " + nextIndex);
         userCards = new UserCardBuilder[newUsers.length];
-        int index = 0;
+        int index = -1;
         for (int i = 0; i < newUsers.length; i++) {
             if (newUsers[i].equals(selectedUser)) {
                 index = i;
@@ -215,12 +219,14 @@ public class BrowseActivity extends Activity {
             userCards[mod(i + nextIndex, newUsers.length)] = new UserCardBuilder(
                     BrowseActivity.this,
                     newUsers[mod(i + index, newUsers.length)]);
-            logMessage += i + " " + newUsers[mod(i + index, newUsers.length)].getName() + ", ";
+        }
+        for (int i = 0; i < userCards.length; i++) {
+            logMessage += i + " " + newUsers[i].getName() + " " + Math.round(newUsers[i].getBearing()) + ", ";
         }
         l("Updating adapter: " + logMessage);
         adapter.notifyDataSetChanged();
         if (isEmpty) {
-            cardScrollView.setSelection(userCards.length * 100);
+            cardScrollView.setSelection(OFFSET);
         }
         return true;
     }
@@ -307,44 +313,70 @@ public class BrowseActivity extends Activity {
 
     private static final double SCOPE = 10;
 
-    public int getIndexByBearing(double bearing) {
-        if (userCards.length == 0) {
+    public static int getIndexByBearing(double bearing, UserCardBuilder[] userCards) {
+        User[] users = new User[userCards.length];
+        for (int i = 0; i < userCards.length; i++) {
+            users[i] = userCards[i].getUser();
+        }
+        return getIndexByBearing(bearing, users);
+    }
+
+    public static int getIndexByBearing(double bearing, User[] users) {
+        int l = users.length;
+        if (l == 0) {
             return 0;
         }
         int index = -1;
-        double[] bearings = new double[userCards.length];
-        for (int i = 0; i < userCards.length; i++) {
-            bearings[i] = userCards[i].getUser().getBearing();
+        double[] bearings = new double[l];
+        for (int i = 0; i < l; i++) {
+            bearings[i] = users[i].getBearing();
         }
-        for (int i = 0; i < bearings.length - 1; i++) {
-            if (bearing > bearings[i] && bearing < bearings[i + 1]) {
-                int a = i;
-                int b = i + 1;
-                index = bearing - bearings[a] < bearings[b] - bearing ? a : b;
-                if (bearing - bearings[a] < SCOPE && bearings[b] - bearing < SCOPE) {
-                    index = userCards[a].getUser().getDistance() < userCards[b].getUser().getDistance()
-                            ? a : b;
+        for (int i = 0; i < l; i++) {
+            int a = i;
+            int b = (i + 1) % l;
+            double diffA = diff(bearing, bearings[a]);
+            double diffB = diff(bearings[b], bearing);
+            if (diffA >= 0 && diffB >= 0) {
+                index = diffA < diffB ? a : b;
+                if (diffA < SCOPE && diffB < SCOPE) {
+                    index = users[a].getDistance() < users[b].getDistance() ? a : b;
                 }
             }
         }
-        if (bearing < bearings[0]) {
-            int a = 0;
-            int b = bearings.length - 1;
-            index = bearings[a] - bearing < bearing + 360 - bearings[b] ? a : b;
-            if (bearings[a] - bearing < SCOPE && bearing + 360 - bearings[b] < SCOPE) {
-                index = userCards[a].getUser().getDistance() < userCards[b].getUser().getDistance()
-                        ? a : b;
-            }
-        }
-        if (bearing > bearings[bearings.length - 1]) {
-            int a = bearings.length - 1;
-            int b = 0;
-            index = bearing - bearings[a] < bearings[b] - bearing + 360 ? a : b;
-            if (bearing - bearings[a] < SCOPE && bearings[b] - bearing + 360 < SCOPE) {
-                index = userCards[a].getUser().getDistance() < userCards[b].getUser().getDistance()
-                        ? a : b;
-            }
-        }
+//        if (bearing < bearings[0]) {
+//            int a = 0;
+//            int b = bearings.length - 1;
+//            index = bearings[a] - bearing < bearing + 360 - bearings[b] ? a : b;
+//            if (bearings[a] - bearing < SCOPE && bearing + 360 - bearings[b] < SCOPE) {
+//                index = users[a].getDistance() < users[b].getDistance()
+//                        ? a : b;
+//            }
+//        }
+//        if (bearing > bearings[bearings.length - 1]) {
+//            int a = bearings.length - 1;
+//            int b = 0;
+//            index = bearing - bearings[a] < bearings[b] - bearing + 360 ? a : b;
+//            if (bearing - bearings[a] < SCOPE && bearings[b] - bearing + 360 < SCOPE) {
+//                index = users[a].getDistance() < users[b].getDistance()
+//                        ? a : b;
+//            }
+//        }
         return index;
+    }
+
+    public static double diff(double deg1, double deg2) {
+        double d = deg1 - deg2;
+        if (d <= -180) {
+            d += 360;
+        }
+        return d;
+    }
+
+    public static boolean isCW(double deg1, double deg2) {
+        double diff = deg1 - deg2;
+        if (diff < -180) {
+            diff += 360;
+        }
+        return Math.abs(diff) <= 180;
     }
 }
