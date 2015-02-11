@@ -94,15 +94,18 @@ public class BrowseActivity extends Activity {
             @Override
             public void onOrientationChanged(double bearing) {
                 if (Math.abs(bearing - updateBearing) > MAX_DEGREES_BEFORE_UPDATE) {
+                    l("Max Degrees before update reached.");
                     updateBearing = bearing;
                     makeLocationUpdateRequest();
                 }
                 if (interactionMode && Math.abs(bearing - userBearing) < 45) {
+                    l("Not updating orientation: Interaction Mode.");
                     return;
                 }
                 synchronized (lock) {
                     int newIndex = getIndexByBearing(bearing);
                     int oldIndex = mod(cardScrollView.getSelectedItemPosition(), userCards.length);
+                    l(String.format("Old: %d to New: %d", oldIndex, newIndex));
                     if (newIndex != oldIndex) {
                         nextIndex = newIndex;
                         int animateTo = cardScrollView.getSelectedItemPosition()
@@ -180,6 +183,7 @@ public class BrowseActivity extends Activity {
             if (userCards.length > 0) {
                 selectedId = userCards[getIndexByBearing(updateBearing)].getUser().getId();
             }
+            l("Making location update request: " + updateBearing);
             ServerFacade.updateLocation(location, updateBearing, selectedId);
         }
     }
@@ -194,7 +198,7 @@ public class BrowseActivity extends Activity {
             l(String.format("updateUsers: does not match: %d %d", position, nextIndex));
             return false;
         }
-        boolean isEmpty = adapter.isEmpty();
+        boolean isEmpty = userCards.length == 0;
         User selectedUser = !isEmpty ? userCards[nextIndex].getUser() : newUsers[0];
         userCards = new UserCardBuilder[newUsers.length];
         int index = 0;
@@ -204,12 +208,16 @@ public class BrowseActivity extends Activity {
                 break;
             }
         }
+        l("Found selected user: " + index);
         // TODO(jeffsul): What if number of users changes?
+        String logMessage = "";
         for (int i = 0; i < userCards.length; i++) {
             userCards[mod(i + nextIndex, newUsers.length)] = new UserCardBuilder(
                     BrowseActivity.this,
                     newUsers[mod(i + index, newUsers.length)]);
+            logMessage += i + " " + newUsers[mod(i + index, newUsers.length)].getName() + ", ";
         }
+        l("Updating adapter: " + logMessage);
         adapter.notifyDataSetChanged();
         if (isEmpty) {
             cardScrollView.setSelection(userCards.length * 100);
