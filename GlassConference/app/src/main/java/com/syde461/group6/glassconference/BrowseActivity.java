@@ -343,24 +343,6 @@ public class BrowseActivity extends Activity {
                 }
             }
         }
-//        if (bearing < bearings[0]) {
-//            int a = 0;
-//            int b = bearings.length - 1;
-//            index = bearings[a] - bearing < bearing + 360 - bearings[b] ? a : b;
-//            if (bearings[a] - bearing < SCOPE && bearing + 360 - bearings[b] < SCOPE) {
-//                index = users[a].getDistance() < users[b].getDistance()
-//                        ? a : b;
-//            }
-//        }
-//        if (bearing > bearings[bearings.length - 1]) {
-//            int a = bearings.length - 1;
-//            int b = 0;
-//            index = bearing - bearings[a] < bearings[b] - bearing + 360 ? a : b;
-//            if (bearing - bearings[a] < SCOPE && bearings[b] - bearing + 360 < SCOPE) {
-//                index = users[a].getDistance() < users[b].getDistance()
-//                        ? a : b;
-//            }
-//        }
         return index;
     }
 
@@ -370,13 +352,5 @@ public class BrowseActivity extends Activity {
             d += 360;
         }
         return d;
-    }
-
-    public static boolean isCW(double deg1, double deg2) {
-        double diff = deg1 - deg2;
-        if (diff < -180) {
-            diff += 360;
-        }
-        return Math.abs(diff) <= 180;
     }
 }
