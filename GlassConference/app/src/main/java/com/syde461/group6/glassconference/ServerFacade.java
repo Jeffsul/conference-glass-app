@@ -195,7 +195,7 @@ public class ServerFacade {
                     }
                     if (obj.has("gender")) {
                         User.Gender gender = obj.getString("gender").equals("Female")
-                                ? User.Gender.F : User.Gender.M
+                                ? User.Gender.F : User.Gender.M;
                         builder.gender(gender);
 
                         if (gender == User.Gender.F) {
