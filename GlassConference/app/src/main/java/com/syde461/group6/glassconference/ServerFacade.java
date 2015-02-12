@@ -174,26 +174,27 @@ public class ServerFacade {
                 for (int i = 0; i < users.length; i++) {
                     JSONObject obj = resp.getJSONObject(i);
                     int id = obj.getInt("id");
-                    String name = "";
+                    User.Builder builder = new User.Builder().id(id);
                     if (obj.has("name")) {
-                        name = obj.getString("name");
+                        builder.name(obj.getString("name"));
                     }
-                    String company = "";
+                    if (obj.has("gender")) {
+                        builder.gender(obj.getString("gender").equals("Female")
+                                ? User.Gender.F : User.Gender.M);
+                    }
                     if (obj.has("company")) {
-                        company = obj.getString("company");
+                        builder.employer(obj.getString("company"));
                     }
-                    double bearing = 0;
+                    if (obj.has("position")) {
+                        builder.position(obj.getString("position"));
+                    }
+                    users[i] = builder.build();
                     if (obj.has("bearing")) {
-                        bearing = obj.getDouble("bearing");
+                        users[i].setBearing(obj.getDouble("bearing"));
                     }
-                    double distance = 0;
                     if (obj.has("distance")) {
-                        distance = obj.getDouble("distance");
+                        users[i].setDistance(obj.getDouble("distance"));
                     }
-                    users[i] = new User.Builder().id(id).name(name).employer(company)
-                            .build();
-                    users[i].setBearing(bearing);
-                    users[i].setDistance(distance);
                 }
                 notifyUpdatedUserList(users);
                 Log.e("glassconference", resp.toString());

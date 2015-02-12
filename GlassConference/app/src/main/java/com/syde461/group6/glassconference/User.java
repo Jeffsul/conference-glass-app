@@ -10,21 +10,27 @@ import android.os.Parcelable;
 public final class User implements Parcelable {
     public static final int DEFAULT_IMAGE = R.drawable.profile_default;
 
+    public enum Gender {
+        M, F
+    }
+
     private double bearing;
     private double distance;
 
     private final int id;
     private final String name;
+    private final Gender gender;
     private final String employer;
     private final String position;
     private final int image;
 
     public static final class Builder {
         private int id;
-        private String name;
-        private String employer;
-        private String position;
-        private int image;
+        private String name = "";
+        private Gender gender = Gender.M;
+        private String employer = "";
+        private String position = "";
+        private int image = DEFAULT_IMAGE;
 
         public Builder id(int id) {
             this.id = id;
@@ -32,6 +38,10 @@ public final class User implements Parcelable {
         }
         public Builder name(String name) {
             this.name = name;
+            return this;
+        }
+        public Builder gender(Gender gender) {
+            this.gender = gender;
             return this;
         }
         public Builder employer(String employer) {
@@ -55,6 +65,7 @@ public final class User implements Parcelable {
     private User(Builder builder) {
         this.id = builder.id;
         this.name = builder.name;
+        this.gender = builder.gender;
         this.employer = builder.employer;
         this.position = builder.position;
         this.image = builder.image;
@@ -66,6 +77,10 @@ public final class User implements Parcelable {
 
     public String getName() {
         return name;
+    }
+
+    public Gender getGender() {
+        return gender;
     }
 
     public String getEmployer() {
@@ -113,6 +128,7 @@ public final class User implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeInt(id);
         dest.writeString(name);
+        dest.writeString(gender.name());
         dest.writeString(employer);
         dest.writeString(position);
         dest.writeInt(image);
@@ -133,6 +149,7 @@ public final class User implements Parcelable {
     public User(Parcel pc) {
         this.id = pc.readInt();
         this.name = pc.readString();
+        this.gender = pc.readString().equals(Gender.M.name()) ? Gender.M : Gender.F;
         this.employer = pc.readString();
         this.position = pc.readString();
         this.image = pc.readInt();
