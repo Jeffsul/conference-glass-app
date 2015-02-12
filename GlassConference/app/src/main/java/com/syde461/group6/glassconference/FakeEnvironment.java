@@ -17,11 +17,11 @@ public class FakeEnvironment {
     private static final long UPDATE_DELAY = TimeUnit.SECONDS.toMillis(2);
 
     private static final User[] FAKE_USERS = {
-            new User(0, "Jeff Sullivan", "Google", "0", R.drawable.profile_jeff),
-            new User(1, "Anson Ho", "University of Waterloo", "1", R.drawable.profile_anson),
-            new User(2, "Catherine Maritan", "Microsoft", "2", R.drawable.profile_catherine),
-            new User(3, "Eric Cheng", "Uber", "3", R.drawable.profile_eric),
-            new User(4, "Kyle Koerth", "Cars", "4", R.drawable.profile_kyle)
+            new User.Builder().id(0).name("Jeff Sullivan").employer("Google").image(R.drawable.profile_jeff).build(),
+            new User.Builder().id(1).name("Anson Ho").employer("University of Waterloo").image(R.drawable.profile_anson).build(),
+            new User.Builder().id(2).name("Catherine Maritan").employer("Microsoft").image(R.drawable.profile_catherine).build(),
+            new User.Builder().id(3).name("Eric Cheng").employer("Uber").image(R.drawable.profile_eric).build(),
+            new User.Builder().id(4).name("Kyle Koerth").employer("Cars").image(R.drawable.profile_kyle).build()
     };
 
     private List<User> fakeUsers = new ArrayList<User>();

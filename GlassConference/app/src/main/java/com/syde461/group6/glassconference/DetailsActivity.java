@@ -56,12 +56,11 @@ public class DetailsActivity extends Activity {
     private void createCards() {
         cards = new ArrayList<CardBuilder>();
 
+        cards.add(new CardBuilder(this, CardBuilder.Layout.TEXT)
+                .setText(user.getPosition() + "\n" + user.getEmployer())
+                .setFootnote(user.getName()));
         cards.add(new CardBuilder(this, CardBuilder.Layout.TITLE)
                 .setText(user.getName())
-                .addImage(user.getImage()));
-        cards.add(new CardBuilder(this, CardBuilder.Layout.COLUMNS)
-                .setText(user.getName())
-                .setFootnote(user.getEmployer())
                 .addImage(user.getImage()));
     }
 }

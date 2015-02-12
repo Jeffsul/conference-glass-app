@@ -75,7 +75,8 @@ public class BrowseActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        ServerFacade.initializeDemo(OrientationManager.DEFAULT_LOCATION, 10, 0);
+        // Initialize the demo with N fake users
+        ServerFacade.initializeDemo(OrientationManager.DEFAULT_LOCATION, 8, 0);
 
         // Stop the display from dimming.
         // TODO(jeffsul): Implement timeout?

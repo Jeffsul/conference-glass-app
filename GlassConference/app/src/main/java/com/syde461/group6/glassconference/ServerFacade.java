@@ -37,6 +37,19 @@ public class ServerFacade {
 
     private static final long FAKE_DELAY = TimeUnit.SECONDS.toMillis(1);
 
+    private static final int[] MALE_PROFILES = {
+            R.drawable.m_1, R.drawable.m_2, R.drawable.m_3, R.drawable.m_4, R.drawable.m_5,
+            R.drawable.profile_anson,
+            R.drawable.profile_eric,
+            R.drawable.profile_kyle,
+            R.drawable.profile_jeff
+    };
+    private static final int[] FEMALE_PROFILES = {
+            R.drawable.f_1, R.drawable.f_2, R.drawable.f_3, R.drawable.f_4, R.drawable.f_5,
+            R.drawable.f_6, R.drawable.f_7,
+            R.drawable.profile_catherine
+    };
+
     private static boolean fake = false;
     private static FakeEnvironment fakeEnvironment = new FakeEnvironment();
 
@@ -171,6 +184,8 @@ public class ServerFacade {
             try {
                 JSONArray resp = new JSONArray(result);
                 User[] users = new User[resp.length()];
+                int mCount = 0;
+                int fCount = 0;
                 for (int i = 0; i < users.length; i++) {
                     JSONObject obj = resp.getJSONObject(i);
                     int id = obj.getInt("id");
@@ -179,8 +194,17 @@ public class ServerFacade {
                         builder.name(obj.getString("name"));
                     }
                     if (obj.has("gender")) {
-                        builder.gender(obj.getString("gender").equals("Female")
-                                ? User.Gender.F : User.Gender.M);
+                        User.Gender gender = obj.getString("gender").equals("Female")
+                                ? User.Gender.F : User.Gender.M
+                        builder.gender(gender);
+
+                        if (gender == User.Gender.F) {
+                            builder.image(FEMALE_PROFILES[fCount]);
+                            fCount++;
+                        } else {
+                            builder.image(MALE_PROFILES[mCount]);
+                            mCount++;
+                        }
                     }
                     if (obj.has("company")) {
                         builder.employer(obj.getString("company"));
