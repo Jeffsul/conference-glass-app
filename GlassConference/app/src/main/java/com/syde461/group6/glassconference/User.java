@@ -5,9 +5,13 @@ import android.os.Parcelable;
 
 /**
  * A model for a user, i.e., another conference-goer.
+ * Uses the Builder construction design pattern.
  */
-public class User implements Parcelable {
-    private static final int DEFAULT_IMAGE = R.drawable.profile_default;
+public final class User implements Parcelable {
+    public static final int DEFAULT_IMAGE = R.drawable.profile_default;
+
+    private double bearing;
+    private double distance;
 
     private final int id;
     private final String name;
@@ -15,19 +19,45 @@ public class User implements Parcelable {
     private final String position;
     private final int image;
 
-    private double bearing;
-    private double distance;
+    public static final class Builder {
+        private int id;
+        private String name;
+        private String employer;
+        private String position;
+        private int image;
 
-    public User(int id, String name, String employer, String position) {
-        this(id, name, employer, position, DEFAULT_IMAGE);
+        public Builder id(int id) {
+            this.id = id;
+            return this;
+        }
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+        public Builder employer(String employer) {
+            this.employer = employer;
+            return this;
+        }
+        public Builder position(String position) {
+            this.position = position;
+            return this;
+        }
+        public Builder image(int image) {
+            this.image = image;
+            return this;
+        }
+
+        public User build() {
+            return new User(this);
+        }
     }
 
-    public User(int id, String name, String employer, String position, int image) {
-        this.id = id;
-        this.name = name;
-        this.employer = employer;
-        this.position = position;
-        this.image = image;
+    private User(Builder builder) {
+        this.id = builder.id;
+        this.name = builder.name;
+        this.employer = builder.employer;
+        this.position = builder.position;
+        this.image = builder.image;
     }
 
     public int getId() {

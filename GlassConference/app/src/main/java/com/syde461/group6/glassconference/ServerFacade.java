@@ -190,7 +190,8 @@ public class ServerFacade {
                     if (obj.has("distance")) {
                         distance = obj.getDouble("distance");
                     }
-                    users[i] = new User(id, name, company, "Test" + i);
+                    users[i] = new User.Builder().id(id).name(name).employer(company)
+                            .build();
                     users[i].setBearing(bearing);
                     users[i].setDistance(distance);
                 }
