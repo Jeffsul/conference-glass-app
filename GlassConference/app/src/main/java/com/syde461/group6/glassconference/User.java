@@ -24,6 +24,8 @@ public final class User implements Parcelable {
     private final String position;
     private final int image;
     private final String connections;
+    private final String papers;
+    private final boolean presenter;
 
     public static final class Builder {
         private int id;
@@ -33,6 +35,8 @@ public final class User implements Parcelable {
         private String position = "";
         private int image = DEFAULT_IMAGE;
         private String connections = "";
+        private String papers = "";
+        private boolean presenter = false;
 
         public Builder id(int id) {
             this.id = id;
@@ -62,6 +66,14 @@ public final class User implements Parcelable {
             this.connections = connections;
             return this;
         }
+        public Builder papers(String papers) {
+            this.papers = papers;
+            return this;
+        }
+        public Builder presenter(boolean presenter) {
+            this.presenter = presenter;
+            return this;
+        }
 
         public User build() {
             return new User(this);
@@ -76,6 +88,8 @@ public final class User implements Parcelable {
         this.position = builder.position;
         this.image = builder.image;
         this.connections = builder.connections;
+        this.papers = builder.papers;
+        this.presenter = builder.presenter;
     }
 
     public int getId() {
@@ -100,6 +114,14 @@ public final class User implements Parcelable {
 
     public String getConnections() {
         return connections;
+    }
+
+    public String getPapers() {
+        return papers;
+    }
+
+    public boolean isPresenter() {
+        return presenter;
     }
 
     public double getBearing() {
@@ -144,6 +166,8 @@ public final class User implements Parcelable {
         dest.writeString(position);
         dest.writeInt(image);
         dest.writeString(connections);
+        dest.writeString(papers);
+        dest.writeString(Boolean.toString(presenter));
     }
 
     public static final Creator<User> CREATOR = new Creator<User>() {
@@ -166,5 +190,7 @@ public final class User implements Parcelable {
         this.position = pc.readString();
         this.image = pc.readInt();
         this.connections = pc.readString();
+        this.papers = pc.readString();
+        this.presenter = pc.readString().equals("true");
     }
 }
