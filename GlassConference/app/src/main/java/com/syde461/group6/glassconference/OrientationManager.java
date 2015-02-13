@@ -144,9 +144,9 @@ public class OrientationManager {
                 float magneticHeading = (float) Math.toDegrees(orientation[0]);
                 bearing = mod(computeTrueNorth(magneticHeading), 360.0f) - ARM_DISPLACEMENT_DEGREES;
 
-                if (Math.abs(bearing - oldBearing) > 2) {
+                //if (Math.abs(bearing - oldBearing) > 2) {
                     notifyOrientationChange();
-                }
+                //}
             }
         }
 
