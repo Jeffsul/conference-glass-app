@@ -80,14 +80,13 @@
             android:singleLine="true"
             android:textAppearance="?android:attr/textAppearanceSmall" />
 
-        <TextView
+        <ImageView
             android:id="@+id/timestamp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="@dimen/glass_card_margin"
-            android:ellipsize="end"
-            android:singleLine="true"
-            android:textAppearance="?android:attr/textAppearanceSmall" />
+            android:src="@drawable/arrow"
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            android:layout_margin="5dp"
+            android:layout_marginLeft="@dimen/glass_card_margin" />
 
     </LinearLayout>
 

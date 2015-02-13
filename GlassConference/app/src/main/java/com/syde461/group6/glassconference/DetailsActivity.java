@@ -56,8 +56,16 @@ public class DetailsActivity extends Activity {
     private void createCards() {
         cards = new ArrayList<CardBuilder>();
 
+        cards.add(new CardBuilder(this, CardBuilder.Layout.AUTHOR)
+                .setHeading(user.getName())
+                .setSubheading(user.getPosition())
+                .setIcon(user.getImage())
+                .setText(user.getEmployer()));
         cards.add(new CardBuilder(this, CardBuilder.Layout.TEXT)
-                .setText(user.getPosition() + "\n" + user.getEmployer())
+                .setText("Mutual connections: " + user.getConnections())
+                .setFootnote(user.getName()));
+        cards.add(new CardBuilder(this, CardBuilder.Layout.TEXT)
+                .setText("Papers: " + user.getPapers())
                 .setFootnote(user.getName()));
         cards.add(new CardBuilder(this, CardBuilder.Layout.TITLE)
                 .setText(user.getName())

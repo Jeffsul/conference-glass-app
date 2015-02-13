@@ -290,7 +290,9 @@ public class BrowseActivity extends Activity {
 
         @Override
         public View getView(int i, View convertView, ViewGroup parent) {
-            return userCards[mod(i, userCards.length)].getView(convertView, parent);
+            UserCardBuilder userCardBuilder = userCards[mod(i, userCards.length)];
+            return userCards[mod(i, userCards.length)].getView(convertView, parent,
+                    90 + (float)diff(userCardBuilder.getUser().getBearing(), userBearing));
         }
 
         @Override
