@@ -75,6 +75,7 @@ public class BrowseActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        l("Starting demo!");
         // Initialize the demo with N fake users
         ServerFacade.initializeDemo(OrientationManager.DEFAULT_LOCATION, 8, 0);
 
@@ -248,6 +249,7 @@ public class BrowseActivity extends Activity {
     public void onDestroy() {
         orientationManager.stopTracking();
         orientationManager = null;
+        handler.removeCallbacks(updateUsersRunnable);
         super.onDestroy();
     }
 
@@ -338,9 +340,11 @@ public class BrowseActivity extends Activity {
             double diffA = diff(bearing, bearings[a]);
             double diffB = diff(bearings[b], bearing);
             if (diffA >= 0 && diffB >= 0) {
-                index = diffA < diffB ? a : b;
+                l("Found interval: " + users[a].getName() + " (" + diffA + ") " + users[b].getName() + " (" + diffB + ")");
                 if (diffA < SCOPE && diffB < SCOPE) {
-                    index = users[a].getDistance() < users[b].getDistance() ? a : b;
+                    return users[a].getDistance() < users[b].getDistance() ? a : b;
+                } else {
+                    return diffA < diffB ? a : b;
                 }
             }
         }
@@ -351,6 +355,9 @@ public class BrowseActivity extends Activity {
         double d = deg1 - deg2;
         if (d <= -180) {
             d += 360;
+        }
+        if (d >= 180) {
+            d -= 360;
         }
         return d;
     }

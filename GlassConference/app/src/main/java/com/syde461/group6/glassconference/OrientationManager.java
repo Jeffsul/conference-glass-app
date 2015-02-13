@@ -34,7 +34,7 @@ public class OrientationManager {
     /**
      * The minimum elapsed time desired between location notifications.
      */
-    private static final long MILLIS_BETWEEN_LOCATIONS = TimeUnit.SECONDS.toMillis(2);
+    private static final long MILLIS_BETWEEN_LOCATIONS = 1500;
 
     /**
      * The sensors used by the compass are mounted in the movable arm on Glass. Depending on how
@@ -48,6 +48,8 @@ public class OrientationManager {
     static {
         DEFAULT_LOCATION.setLatitude(43.483126983087026);
         DEFAULT_LOCATION.setLongitude(-80.53417685449173);
+        DEFAULT_LOCATION.setAltitude(300);
+        DEFAULT_LOCATION.setTime(System.currentTimeMillis());
     }
     private static boolean fake = true;
 
@@ -127,6 +129,7 @@ public class OrientationManager {
         @Override
         public void onSensorChanged(SensorEvent event) {
             if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
+                double oldBearing = bearing;
                 // Get the current heading, then notify listeners.
                 SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values);
                 SensorManager.remapCoordinateSystem(rotationMatrix, SensorManager.AXIS_X,
@@ -141,7 +144,9 @@ public class OrientationManager {
                 float magneticHeading = (float) Math.toDegrees(orientation[0]);
                 bearing = mod(computeTrueNorth(magneticHeading), 360.0f) - ARM_DISPLACEMENT_DEGREES;
 
-                notifyOrientationChange();
+                if (Math.abs(bearing - oldBearing) > 2) {
+                    notifyOrientationChange();
+                }
             }
         }
 
@@ -176,6 +181,7 @@ public class OrientationManager {
             } else {
                 handler = new Handler();
                 handler.post(fakeUpdater);
+                updateGeomagneticField();
             }
 
             // TODO(jeffsul): Check last known location on start.
@@ -201,7 +207,7 @@ public class OrientationManager {
     }
 
     private void notifyOrientationChange() {
-        //Log.e("glassconference", "BEARING: " + bearing);
+        Log.e("glassconference", "BEARING: " + bearing);
         for (OrientationListener listener : listeners) {
             listener.onOrientationChanged(bearing);
         }
