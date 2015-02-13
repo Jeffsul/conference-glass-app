@@ -212,6 +212,9 @@ public class ServerFacade {
                     if (obj.has("position")) {
                         builder.position(obj.getString("position"));
                     }
+                    if (obj.has("connections")) {
+                        builder.connections(obj.getString("connections"));
+                    }
                     users[i] = builder.build();
                     if (obj.has("bearing")) {
                         users[i].setBearing(obj.getDouble("bearing"));

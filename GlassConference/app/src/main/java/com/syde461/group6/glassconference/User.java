@@ -23,6 +23,7 @@ public final class User implements Parcelable {
     private final String employer;
     private final String position;
     private final int image;
+    private final String connections;
 
     public static final class Builder {
         private int id;
@@ -31,6 +32,7 @@ public final class User implements Parcelable {
         private String employer = "";
         private String position = "";
         private int image = DEFAULT_IMAGE;
+        private String connections = "";
 
         public Builder id(int id) {
             this.id = id;
@@ -56,6 +58,10 @@ public final class User implements Parcelable {
             this.image = image;
             return this;
         }
+        public Builder connections(String connections) {
+            this.connections = connections;
+            return this;
+        }
 
         public User build() {
             return new User(this);
@@ -69,6 +75,7 @@ public final class User implements Parcelable {
         this.employer = builder.employer;
         this.position = builder.position;
         this.image = builder.image;
+        this.connections = builder.connections;
     }
 
     public int getId() {
@@ -89,6 +96,10 @@ public final class User implements Parcelable {
 
     public String getPosition() {
         return position;
+    }
+
+    public String getConnections() {
+        return connections;
     }
 
     public double getBearing() {
@@ -132,6 +143,7 @@ public final class User implements Parcelable {
         dest.writeString(employer);
         dest.writeString(position);
         dest.writeInt(image);
+        dest.writeString(connections);
     }
 
     public static final Creator<User> CREATOR = new Creator<User>() {
@@ -153,5 +165,6 @@ public final class User implements Parcelable {
         this.employer = pc.readString();
         this.position = pc.readString();
         this.image = pc.readInt();
+        this.connections = pc.readString();
     }
 }
