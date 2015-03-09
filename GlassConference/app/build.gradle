@@ -29,6 +29,16 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    productFlavors {
+        v1 {
+            applicationId "com.syde461.group6.glassconference.v1"
+            versionName "1.0"
+        }
+        v2 {
+            applicationId "com.syde461.group6.glassconference.v2"
+            versionName "2.0"
+        }
+    }
 }
 
 dependencies {
