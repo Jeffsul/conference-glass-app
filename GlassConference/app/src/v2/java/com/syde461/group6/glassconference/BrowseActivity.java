@@ -4,23 +4,15 @@ import android.app.Activity;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
-import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.AdapterView;
 
 import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
-import com.google.android.glass.widget.CardScrollAdapter;
-import com.google.android.glass.widget.CardScrollView;
 import com.syde461.group6.glassconference.util.GpsLiveCardService;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * The base activity for the app in Browse mode. The user is presented with a view of nearby
@@ -29,54 +21,29 @@ import java.util.concurrent.TimeUnit;
 public class BrowseActivity extends Activity {
     public static final String TAG = "glassconference";
 
-    private static final long EXIT_INTERACTION_MODE_DELAY = TimeUnit.SECONDS.toMillis(10);
+    private static final long MAX_UPDATE_DELAY = 1000;
+    private long lastUpdateRequest = Long.MIN_VALUE;
 
-    private static final long MAX_UPDATE_DELAY = TimeUnit.SECONDS.toMillis(8);
-
-    private static final int OFFSET = 200;
-
-    private static final double MAX_DEGREES_BEFORE_UPDATE = 10;
-
-    private long lastUpdateRequest = Long.MAX_VALUE;
+    private BrowseView browseView;
 
     private GestureDetector gestureDetector;
 
     private OrientationManager orientationManager;
     private UserManager userManager;
-    private User[] userCards = new User[0];
 
-    private CardScrollView cardScrollView;
-    private UserCardAdapter adapter;
-
-    private double updateBearing;
-    private double userBearing;
     private Location location;
-
-    private Object lock = new Object();
-    private int nextIndex;
-
-    private boolean interactionMode;
-
-    private User[] newUsers;
-
-    private Handler handler;
-    private Runnable exitInteractionModeRunnable = new Runnable() {
-        @Override
-        public void run() {
-            interactionMode = false;
-            Log.e(TAG, "Exiting interaction mode.");
-        }
-    };
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        setContentView(R.layout.browse);
+        browseView = (BrowseView) findViewById(R.id.browse_view);
 
         l("Starting demo!");
         // Initialize the demo with N fake users
         ServerFacade.initializeDemo(OrientationManager.DEFAULT_LOCATION, 8, 0);
 
         // Stop the display from dimming.
-        // TODO(jeffsul): Implement timeout?
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         orientationManager = OrientationManager.initialize(this);
@@ -86,56 +53,23 @@ public class BrowseActivity extends Activity {
             @Override
             public void onLocationChanged(Location location) {
                 BrowseActivity.this.location = location;
-                updateBearing = BrowseActivity.this.userBearing;
                 // TODO(jeffsul): Disassociate this from UI/BrowseActivity.
                 makeLocationUpdateRequest();
             }
 
             @Override
             public void onOrientationChanged(double bearing) {
-                if (Math.abs(bearing - updateBearing) > MAX_DEGREES_BEFORE_UPDATE) {
+                if (System.currentTimeMillis() - lastUpdateRequest > MAX_UPDATE_DELAY) {
                     l("Max Degrees before update reached.");
-                    updateBearing = bearing;
                     makeLocationUpdateRequest();
                 }
-                if (interactionMode && Math.abs(bearing - userBearing) < 45) {
-                    l("Not updating orientation: Interaction Mode.");
-                    return;
-                }
-                synchronized (lock) {
-                    int newIndex = getIndexByBearing(bearing, userCards);
-                    int oldIndex = mod(cardScrollView.getSelectedItemPosition(), userCards.length);
-                    l(String.format("Old: %d to New: %d (bearing=" + Math.round(bearing) + ")", oldIndex, newIndex));
-                    if (newIndex != oldIndex) {
-                        nextIndex = newIndex;
-                        int animateTo = cardScrollView.getSelectedItemPosition()
-                                + (newIndex - oldIndex);
-                        cardScrollView.animate(animateTo, CardScrollView.Animation.NAVIGATION);
-                        l(String.format("Orientation change: navigating from %d to %d (animate %d)",
-                                oldIndex, newIndex, animateTo));
-                    }
-                    userBearing = bearing;
-                }
+                browseView.setBearing((float) bearing);
             }
         });
         orientationManager.startTracking();
 
-        cardScrollView = new CardScrollView(this);
-        adapter = new UserCardAdapter();
-        cardScrollView.setAdapter(adapter);
-        cardScrollView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                Intent intent = new Intent(BrowseActivity.this, DetailsActivity.class);
-                intent.putExtra("user",
-                        userCards[mod(cardScrollView.getSelectedItemPosition(), userCards.length)]);
-                startActivity(intent);
-            }
-        });
-        cardScrollView.activate();
-        setContentView(cardScrollView);
+        browseView.setOrientationManager(orientationManager);
 
-        handler = new Handler();
         gestureDetector = new GestureDetector(this).setBaseListener(
                 new GestureDetector.BaseListener() {
             @Override
@@ -145,9 +79,6 @@ public class BrowseActivity extends Activity {
                     return true;
                 } else if (gesture == Gesture.SWIPE_LEFT || gesture == Gesture.SWIPE_RIGHT) {
                     Log.e(TAG, "Entering interaction mode.");
-                    interactionMode = true;
-                    handler.removeCallbacks(exitInteractionModeRunnable);
-                    handler.postDelayed(exitInteractionModeRunnable, EXIT_INTERACTION_MODE_DELAY);
                 }
                 return false;
             }
@@ -156,74 +87,22 @@ public class BrowseActivity extends Activity {
         userManager.addListener(new UserManager.UserChangeListener() {
             @Override
             public void onUserChange(User[] users) {
-                synchronized (lock) {
-                    newUsers = users;
-                    handler.removeCallbacks(updateUsersRunnable);
-                    if (!updateUsers()) {
-                        handler.postDelayed(updateUsersRunnable, 1000);
-                    }
-                }
+                browseView.setNearbyPeople(users);
             }
         });
     }
 
-    private Runnable updateUsersRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (!updateUsers()) {
-                handler.postDelayed(this, 1000);
-            }
-        }
-    };
-
     private void makeLocationUpdateRequest() {
         if (location != null) {
             int selectedId = 0;
-            if (userCards.length > 0) {
-                selectedId = userCards[getIndexByBearing(updateBearing, userCards)].getId();
-            }
-            l("Making location update request: " + updateBearing);
-            ServerFacade.updateLocation(location, updateBearing, selectedId);
+            l("Making location update request.");
+            ServerFacade.updateLocation(location, orientationManager.getBearing(), selectedId);
+            lastUpdateRequest = System.currentTimeMillis();
         }
     }
 
     private static void l(String msg) {
         Log.e(TAG, msg);
-    }
-
-    private synchronized boolean updateUsers() {
-        int position = mod(cardScrollView.getSelectedItemPosition(), userCards.length);
-        if (position != nextIndex) {
-            l(String.format("updateUsers: does not match: %d %d", position, nextIndex));
-            return false;
-        }
-        boolean isEmpty = userCards.length == 0;
-        User selectedUser = !isEmpty ? userCards[nextIndex] : newUsers[0];
-        l("Selected User: " + selectedUser.getName());
-        l("Next Index: " + nextIndex);
-        userCards = new User[newUsers.length];
-        int index = -1;
-        for (int i = 0; i < newUsers.length; i++) {
-            if (newUsers[i].equals(selectedUser)) {
-                index = i;
-                break;
-            }
-        }
-        l("Found selected user: " + index);
-        // TODO(jeffsul): What if number of users changes?
-        String logMessage = "";
-        for (int i = 0; i < userCards.length; i++) {
-            userCards[mod(i + nextIndex, newUsers.length)] = newUsers[mod(i + index, newUsers.length)];
-        }
-        for (int i = 0; i < userCards.length; i++) {
-            logMessage += i + " " + newUsers[i].getName() + " " + Math.round(newUsers[i].getBearing()) + ", ";
-        }
-        l("Updating adapter: " + logMessage);
-        adapter.notifyDataSetChanged();
-        if (isEmpty) {
-            cardScrollView.setSelection(OFFSET);
-        }
-        return true;
     }
 
     @Override
@@ -242,7 +121,6 @@ public class BrowseActivity extends Activity {
     public void onDestroy() {
         orientationManager.stopTracking();
         orientationManager = null;
-        handler.removeCallbacks(updateUsersRunnable);
         super.onDestroy();
     }
 
@@ -268,73 +146,6 @@ public class BrowseActivity extends Activity {
             default:
                 return false;
         }
-    }
-
-    private class UserCardAdapter extends CardScrollAdapter {
-        @Override
-        public int getCount() {
-            return userCards.length > 0 ? Integer.MAX_VALUE : 0;
-        }
-
-        @Override
-        public Object getItem(int i) {
-            return userCards[mod(i, userCards.length)];
-        }
-
-        @Override
-        public View getView(int i, View convertView, ViewGroup parent) {
-            User userCardBuilder = userCards[mod(i, userCards.length)];
-            return null;
-        }
-
-        @Override
-        public int getPosition(Object o) {
-            return userManager.indexOf((User) o);
-        }
-    }
-
-    /**
-     * From: https://github.com/googleglass/gdk-compass-sample/blob/master/app/src/main/java/com/
-     *              google/android/glass/sample/compass/util/MathUtils.java
-     *
-     * Calculates {@code a mod b} in a way that respects negative values (for example,
-     * {@code mod(-1, 5) == 4}, rather than {@code -1}).
-     *
-     * @param a the dividend
-     * @param b the divisor
-     * @return {@code a mod b}
-     */
-    private static int mod(int a, int b) {
-        return b == 0 ? 0 : (a % b + b) % b;
-    }
-
-    private static final double SCOPE = 10;
-
-    public static int getIndexByBearing(double bearing, User[] users) {
-        int l = users.length;
-        if (l == 0) {
-            return 0;
-        }
-        int index = -1;
-        double[] bearings = new double[l];
-        for (int i = 0; i < l; i++) {
-            bearings[i] = users[i].getBearing();
-        }
-        for (int i = 0; i < l; i++) {
-            int a = i;
-            int b = (i + 1) % l;
-            double diffA = diff(bearing, bearings[a]);
-            double diffB = diff(bearings[b], bearing);
-            if (diffA >= 0 && diffB >= 0) {
-                l("Found interval: " + users[a].getName() + " (" + diffA + ") " + users[b].getName() + " (" + diffB + ")");
-                if (diffA < SCOPE && diffB < SCOPE) {
-                    return users[a].getDistance() < users[b].getDistance() ? a : b;
-                } else {
-                    return diffA < diffB ? a : b;
-                }
-            }
-        }
-        return index;
     }
 
     public static double diff(double deg1, double deg2) {

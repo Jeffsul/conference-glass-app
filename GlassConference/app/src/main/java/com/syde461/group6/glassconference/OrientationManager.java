@@ -220,6 +220,10 @@ public class OrientationManager {
         }
     }
 
+    public double getBearing() {
+        return bearing;
+    }
+
     public static interface OrientationListener {
         void onLocationChanged(Location location);
         void onOrientationChanged(double bearing);
