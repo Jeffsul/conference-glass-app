@@ -10,6 +10,7 @@ import android.util.LruCache;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.WindowManager;
 
 import com.google.android.glass.touchpad.Gesture;
@@ -23,7 +24,7 @@ import com.syde461.group6.glassconference.util.GpsLiveCardService;
 public class BrowseActivity extends Activity {
     public static final String TAG = "glassconference";
 
-    private static final long MAX_UPDATE_DELAY = 1000;
+    private static final long MAX_UPDATE_DELAY = 500;
     private long lastUpdateRequest = Long.MIN_VALUE;
 
     private BrowseView browseView;
@@ -40,6 +41,14 @@ public class BrowseActivity extends Activity {
 
         setContentView(R.layout.browse);
         browseView = (BrowseView) findViewById(R.id.browse_view);
+        browseView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(BrowseActivity.this, DetailsActivity.class);
+                intent.putExtra("user", browseView.getSelectedUser());
+                startActivity(intent);
+            }
+        });
 
         l("Starting demo!");
         // Initialize the demo with N fake users
@@ -62,7 +71,7 @@ public class BrowseActivity extends Activity {
             @Override
             public void onOrientationChanged(double bearing) {
                 if (System.currentTimeMillis() - lastUpdateRequest > MAX_UPDATE_DELAY) {
-                    l("Max Degrees before update reached.");
+                    //l("Max Degrees before update reached.");
                     makeLocationUpdateRequest();
                 }
                 browseView.setBearing((float) bearing);
@@ -82,6 +91,13 @@ public class BrowseActivity extends Activity {
                             return true;
                         } else if (gesture == Gesture.SWIPE_LEFT || gesture == Gesture.SWIPE_RIGHT) {
                             Log.e(TAG, "Entering interaction mode.");
+                            browseView.switchSelection(gesture == Gesture.SWIPE_LEFT ? -1 : 1);
+                            return true;
+                        } else if (gesture == Gesture.TAP) {
+                            Intent intent = new Intent(BrowseActivity.this, DetailsActivity.class);
+                            intent.putExtra("user", browseView.getSelectedUser());
+                            startActivity(intent);
+                            return true;
                         }
                         return false;
                     }
@@ -110,13 +126,13 @@ public class BrowseActivity extends Activity {
 
     @Override
     protected void onResume() {
-        orientationManager.startTracking();
+        //orientationManager.startTracking();
         super.onResume();
     }
 
     @Override
     protected void onPause() {
-        orientationManager.stopTracking();
+        //orientationManager.stopTracking();
         super.onPause();
     }
 

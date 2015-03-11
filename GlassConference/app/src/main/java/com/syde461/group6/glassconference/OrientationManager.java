@@ -207,14 +207,14 @@ public class OrientationManager {
     }
 
     private void notifyOrientationChange() {
-        Log.e("glassconference", "BEARING: " + bearing);
+        //Log.e("glassconference", "BEARING: " + bearing);
         for (OrientationListener listener : listeners) {
             listener.onOrientationChanged(bearing);
         }
     }
 
     private void notifyLocationChange() {
-        Log.e("glassconference", location.getLatitude() + ", " + location.getLongitude());
+        //Log.e("glassconference", location.getLatitude() + ", " + location.getLongitude());
         for (OrientationListener listener : listeners) {
             listener.onLocationChanged(location);
         }

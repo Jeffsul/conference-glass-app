@@ -13,9 +13,13 @@ import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.text.TextPaint;
 import android.util.AttributeSet;
+import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 
+import com.google.android.glass.touchpad.Gesture;
+import com.google.android.glass.touchpad.GestureDetector;
 import com.syde461.group6.glassconference.util.ImageUtil;
 import com.syde461.group6.glassconference.util.MathUtil;
 
@@ -52,9 +56,12 @@ public class BrowseView extends View {
     private OrientationManager orientationManager;
     private UserManager userManager;
 
+    private GestureDetector gestureDetector;
+
     private User[] users = new User[0];
 
     private User selectedUser;
+    private User bestUser;
 
     public BrowseView(Context context) {
         this(context, null, 0);
@@ -89,6 +96,19 @@ public class BrowseView extends View {
 
         animator = new ValueAnimator();
         setupAnimator();
+
+        gestureDetector = new GestureDetector(getContext()).setBaseListener(
+                new GestureDetector.BaseListener() {
+                    @Override
+                    public boolean onGesture(Gesture gesture) {
+                        if (gesture == Gesture.SWIPE_LEFT || gesture == Gesture.SWIPE_RIGHT) {
+                            Log.e("confv2", "Entering interaction mode.");
+                            switchSelection(gesture == Gesture.SWIPE_LEFT ? -1 : 1);
+                            return true;
+                        }
+                        return false;
+                    }
+                });
     }
 
     public void setOrientationManager(OrientationManager orientationManager) {
@@ -136,23 +156,68 @@ public class BrowseView extends View {
         return selectedUser != null ? selectedUser.getId() : -1;
     }
 
+    public User getSelectedUser() {
+        return selectedUser;
+    }
+
+    @Override
+    public boolean onGenericMotionEvent(MotionEvent event) {
+        return gestureDetector.onMotionEvent(event);
+    }
+
+    public void switchSelection(int direction) {
+        synchronized (users) {
+            User[] users = this.users.clone();
+            final float selectedBearing = (float) selectedUser.getBearing();
+            Arrays.sort(users, new Comparator<User>() {
+                @Override
+                public int compare(User user, User user2) {
+                    return MathUtil.diff((float)user.getBearing(), selectedBearing) > MathUtil.diff((float)user2.getBearing(), selectedBearing) ? 1 : -1;
+                }
+            });
+            User nextSelection = null;
+            for (int i = 1; i < users.length; i++) {
+                if (direction * (users[i].getBearing() - selectedBearing) > 0) {
+                    nextSelection = users[i];
+                    break;
+                }
+            }
+            if (nextSelection != null) {
+                float pixelsPerDegree = getWidth() / 90.0f;
+                if (MathUtil.diff((float) nextSelection.getBearing(), bearing) * pixelsPerDegree <= getWidth() / 2.0f) {
+                    selectedUser = nextSelection;
+                }
+            }
+        }
+    }
+
     private void drawNearbyPeople(Canvas canvas, float pixelsPerDegree, float offset) {
         l("Drawing people: " + users.length);
         synchronized (users) {
             if (users.length ==  0) {
                 return;
             }
-            User bestUser = null;
+            User shortestUser = null;
             float shortest = Float.MAX_VALUE;
             for (User user : users) {
                 float diff = MathUtil.diff(this.bearing, (float)user.getBearing());
-                if (bestUser == null || diff < shortest) {
-                    bestUser = user;
+                if (shortestUser == null || diff < shortest) {
+                    shortestUser = user;
                     shortest = diff;
                 }
             }
-            if (selectedUser == null || shortest < MathUtil.diff(this.bearing, (float)selectedUser.getBearing())) {
-                selectedUser = bestUser;
+            if (selectedUser != null
+                    && MathUtil.diff(this.bearing, (int)selectedUser.getBearing()) * pixelsPerDegree > getWidth() / 2.0f) {
+                selectedUser = shortestUser;
+            }
+            if (bestUser == null || shortest < MathUtil.diff(this.bearing, (float)bestUser.getBearing())) {
+                if (bestUser != null && bestUser.equals(selectedUser)) {
+                    selectedUser = shortestUser;
+                }
+                if (selectedUser == null) {
+                    selectedUser = shortestUser;
+                }
+                bestUser = shortestUser;
             }
             float maxDistance = (float)users[0].getDistance();
             float minDistance = (float)users[users.length - 1].getDistance();
@@ -185,18 +250,18 @@ public class BrowseView extends View {
 //                }
             }
 
-            Bitmap bmp = userManager.getBitmapFromMemCache(bestUser.makeKey());
+            Bitmap bmp = userManager.getBitmapFromMemCache(selectedUser.makeKey());
             if (bmp == null) {
                 bmp = defaultProfile;
             }
-            float bearing = (float) bestUser.getBearing();
+            float bearing = (float) selectedUser.getBearing();
 
-            double distance = bestUser.getDistance();
+            double distance = selectedUser.getDistance();
             float distRatio = ((float)distance - minDistance) / (maxDistance - minDistance);
             float distOffset = 170 * distRatio;
             Rect textBounds = new Rect();
-            String text = bestUser.getName();
-            String text2 = bestUser.getEmployer();
+            String text = selectedUser.getName();
+            String text2 = selectedUser.getEmployer();
             userNamePaint.getTextBounds(text, 0, text.length(), textBounds);
             float text2Width = userNamePaint.measureText(text2);
             //textBounds.offsetTo((int)(offset + bearing * pixelsPerDegree), 5);
