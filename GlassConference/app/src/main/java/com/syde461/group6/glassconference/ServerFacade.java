@@ -200,13 +200,13 @@ public class ServerFacade {
                                 ? User.Gender.F : User.Gender.M;
                         builder.gender(gender);
 
-                        if (gender == User.Gender.F) {
-                            builder.image(FEMALE_PROFILES[fCount]);
-                            fCount++;
-                        } else {
-                            builder.image(MALE_PROFILES[mCount]);
-                            mCount++;
-                        }
+//                        if (gender == User.Gender.F) {
+//                            builder.image(FEMALE_PROFILES[fCount]);
+//                            fCount++;
+//                        } else {
+//                            builder.image(MALE_PROFILES[mCount]);
+//                            mCount++;
+//                        }
                     }
                     if (obj.has("company")) {
                         builder.employer(obj.getString("company"));

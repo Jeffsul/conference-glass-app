@@ -43,7 +43,7 @@ public class BrowseActivity extends Activity {
 
         l("Starting demo!");
         // Initialize the demo with N fake users
-        ServerFacade.initializeDemo(OrientationManager.DEFAULT_LOCATION, 8, 0);
+        ServerFacade.initializeDemo(OrientationManager.DEFAULT_LOCATION, 16, 0);
 
         // Stop the display from dimming.
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);

@@ -19,6 +19,9 @@ import android.view.animation.LinearInterpolator;
 
 import com.syde461.group6.glassconference.util.ImageUtil;
 
+import java.util.Arrays;
+import java.util.Comparator;
+
 /**
  * Created by Jeff on 10/03/2015.
  */
@@ -78,7 +81,7 @@ public class BrowseView extends View {
         defaultProfile = ImageUtil.getRoundedCornerBitmap(
                 Bitmap.createScaledBitmap(
                         BitmapFactory.decodeResource(getResources(), R.drawable.profile_default),
-                        170, 170, false));
+                        140, 140, false));
 
         animatedHeading = Float.NaN;
 
@@ -96,6 +99,12 @@ public class BrowseView extends View {
 
     public void setNearbyPeople(User[] nearbyPeople) {
         this.users = nearbyPeople;
+        Arrays.sort(users, new Comparator<User>() {
+            @Override
+            public int compare(User user, User user2) {
+                return user.getDistance() > user2.getDistance() ? -1 : 1;
+            }
+        });
     }
 
     @Override
@@ -110,8 +119,9 @@ public class BrowseView extends View {
 
         canvas.save();
         float canvasX = -animatedHeading * pixelsPerDegree + centerX;
+        float canvasY = getHeight() - 100;
         l("Drawing canvas, X: " + canvasX);
-        canvas.translate(canvasX, centerY);
+        canvas.translate(canvasX, canvasY);
 
         for (int i = -1; i <= 1; i++) {
             drawNearbyPeople(canvas, pixelsPerDegree, i * pixelsPerDegree * 360);
@@ -122,26 +132,37 @@ public class BrowseView extends View {
 
     private void drawNearbyPeople(Canvas canvas, float pixelsPerDegree, float offset) {
         l("Drawing people: " + users.length);
+        if (users.length ==  0) {
+            return;
+        }
         synchronized (users) {
+            float maxDistance = (float)users[0].getDistance();
+            float minDistance = (float)users[users.length - 1].getDistance();
             for (User user : users) {
                 Bitmap bmp = userManager.getBitmapFromMemCache(user.makeKey());
                 if (bmp == null) {
                     bmp = defaultProfile;
                 }
-                double relativeBearing = user.getBearing();
+                float bearing = (float) user.getBearing();
 
                 double distance = user.getDistance();
+                float distRatio = ((float)distance - minDistance) / (maxDistance - minDistance);
+                float distOffset = 160 * distRatio;
                 Rect textBounds = new Rect();
                 String text = user.getFirstName();
                 userNamePaint.getTextBounds(text, 0, text.length(), textBounds);
-                textBounds.offsetTo((int)(offset + relativeBearing * pixelsPerDegree), 5);
+                textBounds.offsetTo((int)(offset + bearing * pixelsPerDegree), 5);
 
-                float drawX = (float) (offset + relativeBearing * pixelsPerDegree - bmp.getWidth() / 2);
-                l("Drawing user: " + user.getName() + ", " + relativeBearing + ", " + drawX);
-                canvas.drawBitmap(bmp, drawX, -bmp.getHeight() / 2, paint);
-                float textX = (float)(offset + relativeBearing * pixelsPerDegree) - textBounds.width() / 2;
-                canvas.drawText(text, textX,
-                        textBounds.top + PLACE_TEXT_HEIGHT + bmp.getHeight() / 2, userNamePaint);
+                float bmpHeight = bmp.getHeight();
+                float bmpWidth = bmp.getWidth();
+                float bmpX = offset + bearing * pixelsPerDegree - bmpWidth / 2;
+                float bmpY = -bmpHeight / 2 - distOffset;
+                paint.setAlpha(255 - (int)(distRatio * 150));
+                canvas.drawBitmap(bmp, bmpX, bmpY, paint);
+
+                float textX = offset + bearing * pixelsPerDegree - textBounds.width() / 2;
+                float textY = textBounds.top + PLACE_TEXT_HEIGHT + bmp.getHeight() / 2 - distOffset;
+                canvas.drawText(text, textX, textY, userNamePaint);
             }
         }
     }
