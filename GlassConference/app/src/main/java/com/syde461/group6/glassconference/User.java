@@ -19,10 +19,12 @@ public final class User implements Parcelable {
 
     private final int id;
     private final String name;
+    private String firstName;
     private final Gender gender;
     private final String employer;
     private final String position;
     private final int image;
+    private String imageUrl;
     private final String connections;
     private final String papers;
     private final boolean presenter;
@@ -30,10 +32,12 @@ public final class User implements Parcelable {
     public static final class Builder {
         private int id;
         private String name = "";
+        private String firstName = "";
         private Gender gender = Gender.M;
         private String employer = "";
         private String position = "";
         private int image = DEFAULT_IMAGE;
+        private String imageUrl = "";
         private String connections = "";
         private String papers = "";
         private boolean presenter = false;
@@ -44,6 +48,10 @@ public final class User implements Parcelable {
         }
         public Builder name(String name) {
             this.name = name;
+            return this;
+        }
+        public Builder firstName(String firstName) {
+            this.firstName = firstName;
             return this;
         }
         public Builder gender(Gender gender) {
@@ -60,6 +68,10 @@ public final class User implements Parcelable {
         }
         public Builder image(int image) {
             this.image = image;
+            return this;
+        }
+        public Builder imageUrl(String imageUrl) {
+            this.imageUrl = imageUrl;
             return this;
         }
         public Builder connections(String connections) {
@@ -83,10 +95,12 @@ public final class User implements Parcelable {
     private User(Builder builder) {
         this.id = builder.id;
         this.name = builder.name;
+        this.firstName = builder.firstName;
         this.gender = builder.gender;
         this.employer = builder.employer;
         this.position = builder.position;
         this.image = builder.image;
+        this.imageUrl = builder.imageUrl;
         this.connections = builder.connections;
         this.papers = builder.papers;
         this.presenter = builder.presenter;
@@ -98,6 +112,10 @@ public final class User implements Parcelable {
 
     public String getName() {
         return name;
+    }
+
+    public String getFirstName() {
+        return firstName;
     }
 
     public Gender getGender() {
@@ -142,6 +160,10 @@ public final class User implements Parcelable {
 
     public int getImage() {
         return image;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
     }
 
     public String makeKey() {

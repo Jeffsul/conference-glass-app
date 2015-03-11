@@ -43,6 +43,7 @@ public class BrowseView extends View {
     private TextPaint userNamePaint;
 
     private OrientationManager orientationManager;
+    private UserManager userManager;
 
     private User[] users = new User[0];
 
@@ -80,6 +81,10 @@ public class BrowseView extends View {
         this.orientationManager = orientationManager;
     }
 
+    public void setUserManager(UserManager userManager) {
+        this.userManager = userManager;
+    }
+
     public void setNearbyPeople(User[] nearbyPeople) {
         this.users = nearbyPeople;
     }
@@ -109,26 +114,25 @@ public class BrowseView extends View {
     private void drawNearbyPeople(Canvas canvas, float pixelsPerDegree, float offset) {
         l("Drawing people: " + users.length);
         synchronized (users) {
-            double myBearing = orientationManager.getBearing();
             for (User user : users) {
-                BitmapFactory.Options opts = new BitmapFactory.Options();
-                opts.outWidth = 50;
-                opts.outHeight = 50;
-                Bitmap bmp = BitmapFactory.decodeResource(getContext().getResources(), user.getImage(), opts);
-
+                Bitmap bmp = userManager.getBitmapFromMemCache(user.makeKey());
+                if (bmp == null) {
+                    bmp = BitmapFactory.decodeResource(getResources(), R.drawable.profile_default);
+                }
                 double relativeBearing = user.getBearing();
 
                 double distance = user.getDistance();
                 Rect textBounds = new Rect();
-                String text = user.getName();
+                String text = user.getFirstName();
                 userNamePaint.getTextBounds(text, 0, text.length(), textBounds);
-                textBounds.offsetTo((int)(offset + relativeBearing * pixelsPerDegree), 30);
+                textBounds.offsetTo((int)(offset + relativeBearing * pixelsPerDegree), 5);
 
-                float drawX = (float) (offset + relativeBearing * pixelsPerDegree - 25);
+                float drawX = (float) (offset + relativeBearing * pixelsPerDegree - bmp.getWidth() / 2);
                 l("Drawing user: " + user.getName() + ", " + relativeBearing + ", " + drawX);
-                canvas.drawBitmap(bmp, drawX, -25, paint);
-                canvas.drawText(text, (float)(offset + relativeBearing * pixelsPerDegree),
-                        textBounds.top + PLACE_TEXT_HEIGHT, userNamePaint);
+                canvas.drawBitmap(bmp, drawX, -bmp.getHeight() / 2, paint);
+                float textX = (float)(offset + relativeBearing * pixelsPerDegree) - textBounds.width() / 2;
+                canvas.drawText(text, textX,
+                        textBounds.top + PLACE_TEXT_HEIGHT + bmp.getHeight() / 2, userNamePaint);
             }
         }
     }

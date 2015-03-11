@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -193,6 +192,9 @@ public class ServerFacade {
                     if (obj.has("name")) {
                         builder.name(obj.getString("name"));
                     }
+                    if (obj.has("first_name")) {
+                        builder.firstName(obj.getString("first_name"));
+                    }
                     if (obj.has("gender")) {
                         User.Gender gender = obj.getString("gender").equals("Female")
                                 ? User.Gender.F : User.Gender.M;
@@ -220,6 +222,9 @@ public class ServerFacade {
                     }
                     if (obj.has("presenter")) {
                         builder.presenter(obj.getBoolean("presenter"));
+                    }
+                    if (obj.has("picture")) {
+                        builder.imageUrl(obj.getString("picture"));
                     }
                     users[i] = builder.build();
                     if (obj.has("bearing")) {

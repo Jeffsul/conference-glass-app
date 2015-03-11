@@ -1,5 +1,21 @@
 package com.syde461.group6.glassconference;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.os.AsyncTask;
+import android.util.Log;
+import android.util.LruCache;
+import android.widget.ImageView;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -16,6 +32,84 @@ public class UserManager implements ServerFacade.UserUpdateListener {
 
     private UserManager() {
         users = new User[0];
+
+        // Get max available VM memory, exceeding this amount will throw an
+        // OutOfMemory exception. Stored in kilobytes as LruCache takes an
+        // int in its constructor.
+        final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
+
+        // Use 1/8th of the available memory for this memory cache.
+        final int cacheSize = maxMemory / 8;
+
+        memoryCache = new LruCache<String, Bitmap>(cacheSize) {
+            @Override
+            protected int sizeOf(String key, Bitmap bitmap) {
+                // The cache size will be measured in kilobytes rather than
+                // number of items.
+                return bitmap.getByteCount() / 1024;
+            }
+        };
+    }
+
+    private LruCache<String, Bitmap> memoryCache;
+
+    private void addBitmapToMemoryCache(String key, Bitmap bitmap) {
+        if (getBitmapFromMemCache(key) == null) {
+            memoryCache.put(key, bitmap);
+        }
+    }
+
+    public Bitmap getBitmapFromMemCache(String key) {
+        return memoryCache.get(key);
+    }
+
+    private class DownloadImageTask extends AsyncTask<String, String, Bitmap> {
+        private final User user;
+
+        public DownloadImageTask(User user) {
+            this.user = user;
+        }
+
+        @Override
+        protected Bitmap doInBackground(String... imageUrl) {
+            Bitmap bmp = null;
+            try {
+                URL url = new URL(imageUrl[0]);
+                bmp = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+            } catch (MalformedURLException e) {
+                Log.e("confv2", "Error loading image: " + imageUrl[0], e);
+            } catch (IOException e) {
+                Log.e("confv2", "Error loading image.", e);
+            }
+            bmp = getRoundedCornerBitmap(bmp);
+            return bmp;
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap result) {
+            addBitmapToMemoryCache(user.makeKey(), result);
+        }
+    }
+
+    /** Credit: http://stackoverflow.com/questions/2459916/how-to-make-an-imageview-with-rounded-corners */
+    public static Bitmap getRoundedCornerBitmap(Bitmap bitmap) {
+        Bitmap output = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(output);
+
+        final int color = 0xffffffff;
+        final Paint paint = new Paint();
+        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+        final RectF rectF = new RectF(rect);
+
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+        paint.setColor(color);
+        canvas.drawOval(rectF, paint);
+
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, rect, rect, paint);
+
+        return output;
     }
 
     private static UserManager instance;
@@ -78,6 +172,11 @@ public class UserManager implements ServerFacade.UserUpdateListener {
     public void onUserListUpdate(User[] users) {
         getLastUsers = this.users;
         this.users = users;
+        for (User user : users) {
+            if (getBitmapFromMemCache(user.makeKey()) == null) {
+                new DownloadImageTask(user).execute(user.getImageUrl());
+            }
+        }
         notifyListeners();
     }
 
