@@ -127,6 +127,14 @@ public class BrowseView extends View {
                 return user.getDistance() > user2.getDistance() ? -1 : 1;
             }
         });
+        if (selectedUser != null) {
+            for (User user : users) {
+                if (user.equals(selectedUser)) {
+                    selectedUser = user;
+                    break;
+                }
+            }
+        }
     }
 
     @Override
@@ -240,7 +248,7 @@ public class BrowseView extends View {
                 float bmpWidth = bmp.getWidth();
                 float bmpX = offset + bearing * pixelsPerDegree - bmpWidth / 2;
                 float bmpY = -bmpHeight / 2 - distOffset;
-                paint.setAlpha(255 - (int)(distRatio * 160));
+                paint.setAlpha(255 - (int)(distRatio * 180));
                 canvas.drawBitmap(bmp, bmpX, bmpY, paint);
 
 //                if (user == bestUser) {
