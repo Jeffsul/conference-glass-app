@@ -13,6 +13,8 @@ import android.util.Log;
 import android.util.LruCache;
 import android.widget.ImageView;
 
+import com.syde461.group6.glassconference.util.ImageUtil;
+
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -81,7 +83,7 @@ public class UserManager implements ServerFacade.UserUpdateListener {
             } catch (IOException e) {
                 Log.e("confv2", "Error loading image.", e);
             }
-            bmp = getRoundedCornerBitmap(bmp);
+            bmp = ImageUtil.getRoundedCornerBitmap(bmp);
             return bmp;
         }
 
@@ -89,27 +91,6 @@ public class UserManager implements ServerFacade.UserUpdateListener {
         protected void onPostExecute(Bitmap result) {
             addBitmapToMemoryCache(user.makeKey(), result);
         }
-    }
-
-    /** Credit: http://stackoverflow.com/questions/2459916/how-to-make-an-imageview-with-rounded-corners */
-    public static Bitmap getRoundedCornerBitmap(Bitmap bitmap) {
-        Bitmap output = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(output);
-
-        final int color = 0xffffffff;
-        final Paint paint = new Paint();
-        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
-        final RectF rectF = new RectF(rect);
-
-        paint.setAntiAlias(true);
-        canvas.drawARGB(0, 0, 0, 0);
-        paint.setColor(color);
-        canvas.drawOval(rectF, paint);
-
-        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
-        canvas.drawBitmap(bitmap, rect, rect, paint);
-
-        return output;
     }
 
     private static UserManager instance;

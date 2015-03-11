@@ -17,6 +17,8 @@ import android.util.Log;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 
+import com.syde461.group6.glassconference.util.ImageUtil;
+
 /**
  * Created by Jeff on 10/03/2015.
  */
@@ -26,6 +28,8 @@ public class BrowseView extends View {
     private static final float PLACE_TEXT_HEIGHT = 22.0f;
 
     private static final float MIN_DISTANCE_TO_ANIMATE = 15.0f;
+
+    private final Bitmap defaultProfile;
 
     /**
      * Copied:
@@ -70,6 +74,11 @@ public class BrowseView extends View {
         userNamePaint.setColor(Color.WHITE);
         userNamePaint.setTextSize(PLACE_TEXT_HEIGHT);
         userNamePaint.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
+
+        defaultProfile = ImageUtil.getRoundedCornerBitmap(
+                Bitmap.createScaledBitmap(
+                        BitmapFactory.decodeResource(getResources(), R.drawable.profile_default),
+                        170, 170, false));
 
         animatedHeading = Float.NaN;
 
@@ -117,7 +126,7 @@ public class BrowseView extends View {
             for (User user : users) {
                 Bitmap bmp = userManager.getBitmapFromMemCache(user.makeKey());
                 if (bmp == null) {
-                    bmp = BitmapFactory.decodeResource(getResources(), R.drawable.profile_default);
+                    bmp = defaultProfile;
                 }
                 double relativeBearing = user.getBearing();
 
