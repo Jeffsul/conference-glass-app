@@ -1,6 +1,8 @@
 package com.syde461.group6.glassconference;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -56,19 +58,25 @@ public class DetailsActivity extends Activity {
     private void createCards() {
         cards = new ArrayList<CardBuilder>();
 
+        Bitmap bmp = UserManager.getInstance().getBitmapFromMemCache(user.makeKey());
+        if (bmp == null) {
+            bmp = BitmapFactory.decodeResource(getResources(), R.drawable.profile_default);
+        }
         cards.add(new CardBuilder(this, CardBuilder.Layout.AUTHOR)
                 .setHeading(user.getName())
                 .setSubheading(user.getPosition())
-                .setIcon(user.getImage())
+                .setIcon(bmp)
                 .setText(user.getEmployer()));
-        cards.add(new CardBuilder(this, CardBuilder.Layout.TEXT)
-                .setText("Mutual connections: " + user.getConnections())
-                .setFootnote(user.getName()));
+        if (user.getConnections() != null && user.getConnections().trim().length() > 0) {
+            cards.add(new CardBuilder(this, CardBuilder.Layout.TEXT)
+                    .setText("Mutual connections: " + user.getConnections())
+                    .setFootnote(user.getName()));
+        }
         cards.add(new CardBuilder(this, CardBuilder.Layout.TEXT)
                 .setText("Papers: " + user.getPapers())
                 .setFootnote(user.getName()));
         cards.add(new CardBuilder(this, CardBuilder.Layout.TITLE)
                 .setText(user.getName())
-                .addImage(user.getImage()));
+                .addImage(bmp));
     }
 }

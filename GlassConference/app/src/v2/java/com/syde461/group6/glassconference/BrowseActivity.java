@@ -126,6 +126,8 @@ public class BrowseActivity extends Activity {
 
     @Override
     protected void onResume() {
+        // Start/stopping tracking seems to cause issues after leaving Details activity.
+        // Orientation is reset, or something.
         //orientationManager.startTracking();
         super.onResume();
     }
