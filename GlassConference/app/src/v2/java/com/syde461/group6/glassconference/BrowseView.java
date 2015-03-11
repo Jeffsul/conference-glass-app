@@ -13,11 +13,11 @@ import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.text.TextPaint;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 
 import com.syde461.group6.glassconference.util.ImageUtil;
+import com.syde461.group6.glassconference.util.MathUtil;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -28,7 +28,7 @@ import java.util.Comparator;
 public class BrowseView extends View {
 
     private static final float DIRECTION_TEXT_HEIGHT = 84.0f;
-    private static final float PLACE_TEXT_HEIGHT = 22.0f;
+    private static final float USER_TEXT_HEIGHT = 24.0f;
 
     private static final float MIN_DISTANCE_TO_ANIMATE = 15.0f;
 
@@ -54,6 +54,8 @@ public class BrowseView extends View {
 
     private User[] users = new User[0];
 
+    private User selectedUser;
+
     public BrowseView(Context context) {
         this(context, null, 0);
     }
@@ -75,7 +77,7 @@ public class BrowseView extends View {
         userNamePaint.setStyle(Paint.Style.FILL);
         userNamePaint.setAntiAlias(true);
         userNamePaint.setColor(Color.WHITE);
-        userNamePaint.setTextSize(PLACE_TEXT_HEIGHT);
+        userNamePaint.setTextSize(USER_TEXT_HEIGHT);
         userNamePaint.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
 
         defaultProfile = ImageUtil.getRoundedCornerBitmap(
@@ -119,7 +121,7 @@ public class BrowseView extends View {
 
         canvas.save();
         float canvasX = -animatedHeading * pixelsPerDegree + centerX;
-        float canvasY = getHeight() - 100;
+        float canvasY = getHeight() - 110;
         l("Drawing canvas, X: " + canvasX);
         canvas.translate(canvasX, canvasY);
 
@@ -130,12 +132,28 @@ public class BrowseView extends View {
         canvas.restore();
     }
 
+    public int getSelectedUserId() {
+        return selectedUser != null ? selectedUser.getId() : -1;
+    }
+
     private void drawNearbyPeople(Canvas canvas, float pixelsPerDegree, float offset) {
         l("Drawing people: " + users.length);
-        if (users.length ==  0) {
-            return;
-        }
         synchronized (users) {
+            if (users.length ==  0) {
+                return;
+            }
+            User bestUser = null;
+            float shortest = Float.MAX_VALUE;
+            for (User user : users) {
+                float diff = MathUtil.diff(this.bearing, (float)user.getBearing());
+                if (bestUser == null || diff < shortest) {
+                    bestUser = user;
+                    shortest = diff;
+                }
+            }
+            if (selectedUser == null || shortest < MathUtil.diff(this.bearing, (float)selectedUser.getBearing())) {
+                selectedUser = bestUser;
+            }
             float maxDistance = (float)users[0].getDistance();
             float minDistance = (float)users[users.length - 1].getDistance();
             for (User user : users) {
@@ -147,23 +165,58 @@ public class BrowseView extends View {
 
                 double distance = user.getDistance();
                 float distRatio = ((float)distance - minDistance) / (maxDistance - minDistance);
-                float distOffset = 160 * distRatio;
+                float distOffset = 170 * distRatio;
                 Rect textBounds = new Rect();
-                String text = user.getFirstName();
+                String text = user.getName();
                 userNamePaint.getTextBounds(text, 0, text.length(), textBounds);
-                textBounds.offsetTo((int)(offset + bearing * pixelsPerDegree), 5);
+                //textBounds.offsetTo((int)(offset + bearing * pixelsPerDegree), 5);
 
                 float bmpHeight = bmp.getHeight();
                 float bmpWidth = bmp.getWidth();
                 float bmpX = offset + bearing * pixelsPerDegree - bmpWidth / 2;
                 float bmpY = -bmpHeight / 2 - distOffset;
-                paint.setAlpha(255 - (int)(distRatio * 150));
+                paint.setAlpha(255 - (int)(distRatio * 160));
                 canvas.drawBitmap(bmp, bmpX, bmpY, paint);
 
-                float textX = offset + bearing * pixelsPerDegree - textBounds.width() / 2;
-                float textY = textBounds.top + PLACE_TEXT_HEIGHT + bmp.getHeight() / 2 - distOffset;
-                canvas.drawText(text, textX, textY, userNamePaint);
+//                if (user == bestUser) {
+//                    float textX = offset + bearing * pixelsPerDegree - textWidth / 2;
+//                    float textY = 5 + USER_TEXT_HEIGHT + bmp.getHeight() / 2 - distOffset;
+//                    canvas.drawText(text, textX, textY, userNamePaint);
+//                }
             }
+
+            Bitmap bmp = userManager.getBitmapFromMemCache(bestUser.makeKey());
+            if (bmp == null) {
+                bmp = defaultProfile;
+            }
+            float bearing = (float) bestUser.getBearing();
+
+            double distance = bestUser.getDistance();
+            float distRatio = ((float)distance - minDistance) / (maxDistance - minDistance);
+            float distOffset = 170 * distRatio;
+            Rect textBounds = new Rect();
+            String text = bestUser.getName();
+            String text2 = bestUser.getEmployer();
+            userNamePaint.getTextBounds(text, 0, text.length(), textBounds);
+            float text2Width = userNamePaint.measureText(text2);
+            //textBounds.offsetTo((int)(offset + bearing * pixelsPerDegree), 5);
+
+            float bmpHeight = bmp.getHeight();
+            float bmpWidth = bmp.getWidth();
+            float bmpX = offset + bearing * pixelsPerDegree - bmpWidth / 2;
+            float bmpY = -bmpHeight / 2 - distOffset;
+            paint.setAlpha(255);
+            paint.setColor(Color.WHITE);
+            canvas.drawCircle(offset + bearing * pixelsPerDegree, -distOffset, bmpHeight / 2 + 3, paint);
+            canvas.drawBitmap(bmp, bmpX, bmpY, paint);
+
+            float textX = offset + bearing * pixelsPerDegree - textBounds.width() / 2;
+            float textY = 4 + USER_TEXT_HEIGHT + bmp.getHeight() / 2 - distOffset;
+            canvas.drawText(text, textX, textY, userNamePaint);
+
+            textX = offset + bearing * pixelsPerDegree - text2Width / 2;
+            textY += textBounds.height() + 2;
+            canvas.drawText(text2, textX, textY, userNamePaint);
         }
     }
 

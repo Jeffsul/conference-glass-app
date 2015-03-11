@@ -97,9 +97,9 @@ public class BrowseActivity extends Activity {
 
     private void makeLocationUpdateRequest() {
         if (location != null) {
-            int selectedId = 0;
-            l("Making location update request.");
-            ServerFacade.updateLocation(location, orientationManager.getBearing(), selectedId);
+            //l("Making location update request.");
+            ServerFacade.updateLocation(location, orientationManager.getBearing(),
+                    browseView.getSelectedUserId());
             lastUpdateRequest = System.currentTimeMillis();
         }
     }
@@ -149,16 +149,5 @@ public class BrowseActivity extends Activity {
             default:
                 return false;
         }
-    }
-
-    public static double diff(double deg1, double deg2) {
-        double d = deg1 - deg2;
-        if (d <= -180) {
-            d += 360;
-        }
-        if (d >= 180) {
-            d -= 360;
-        }
-        return d;
     }
 }
