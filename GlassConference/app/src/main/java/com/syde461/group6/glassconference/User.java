@@ -24,9 +24,10 @@ public final class User implements Parcelable {
     private final String employer;
     private final String position;
     private final int image;
-    private String imageUrl;
-    private final String connections;
-    private final String papers;
+    private final String imageUrl;
+    private final String[] connections;
+    private final String[] papers;
+    private final String[] interests;
     private final boolean presenter;
 
     public static final class Builder {
@@ -38,8 +39,9 @@ public final class User implements Parcelable {
         private String position = "";
         private int image = DEFAULT_IMAGE;
         private String imageUrl = "";
-        private String connections = "";
-        private String papers = "";
+        private String[] connections = {};
+        private String[] papers = {};
+        private String[] interests = {};
         private boolean presenter = false;
 
         public Builder id(int id) {
@@ -74,12 +76,16 @@ public final class User implements Parcelable {
             this.imageUrl = imageUrl;
             return this;
         }
-        public Builder connections(String connections) {
+        public Builder connections(String[] connections) {
             this.connections = connections;
             return this;
         }
-        public Builder papers(String papers) {
+        public Builder papers(String[] papers) {
             this.papers = papers;
+            return this;
+        }
+        public Builder interests(String[] interests) {
+            this.interests = interests;
             return this;
         }
         public Builder presenter(boolean presenter) {
@@ -103,6 +109,7 @@ public final class User implements Parcelable {
         this.imageUrl = builder.imageUrl;
         this.connections = builder.connections;
         this.papers = builder.papers;
+        this.interests = builder.interests;
         this.presenter = builder.presenter;
     }
 
@@ -130,12 +137,16 @@ public final class User implements Parcelable {
         return position;
     }
 
-    public String getConnections() {
+    public String[] getConnections() {
         return connections;
     }
 
-    public String getPapers() {
+    public String[] getPapers() {
         return papers;
+    }
+
+    public String[] getInterests() {
+        return interests;
     }
 
     public boolean isPresenter() {
@@ -187,8 +198,10 @@ public final class User implements Parcelable {
         dest.writeString(employer);
         dest.writeString(position);
         dest.writeInt(image);
-        dest.writeString(connections);
-        dest.writeString(papers);
+        dest.writeString(imageUrl);
+        dest.writeStringArray(connections);
+        dest.writeStringArray(papers);
+        dest.writeStringArray(interests);
         dest.writeString(Boolean.toString(presenter));
     }
 
@@ -211,8 +224,10 @@ public final class User implements Parcelable {
         this.employer = pc.readString();
         this.position = pc.readString();
         this.image = pc.readInt();
-        this.connections = pc.readString();
-        this.papers = pc.readString();
+        this.imageUrl = pc.readString();
+        this.connections = pc.createStringArray();
+        this.papers = pc.createStringArray();
+        this.interests = pc.createStringArray();
         this.presenter = pc.readString().equals("true");
     }
 }

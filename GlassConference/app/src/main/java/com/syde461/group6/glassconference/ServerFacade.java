@@ -179,7 +179,6 @@ public class ServerFacade {
 
         @Override
         protected void onPostExecute(String result) {
-            //Log.e("glassconference", "UpdateLocationResult: " + result);
             try {
                 JSONArray resp = new JSONArray(result);
                 User[] users = new User[resp.length()];
@@ -215,10 +214,13 @@ public class ServerFacade {
                         builder.position(obj.getString("position"));
                     }
                     if (obj.has("connections")) {
-                        builder.connections(obj.getString("connections"));
+                        builder.connections(parseList(obj.getString("connections")));
                     }
                     if (obj.has("papers")) {
-                        builder.papers(obj.getString("papers"));
+                        builder.papers(parseList(obj.getString("papers")));
+                    }
+                    if (obj.has("interest")) {
+                        builder.interests(parseList(obj.getString("interest")));
                     }
                     if (obj.has("presenter")) {
                         builder.presenter(obj.getBoolean("presenter"));
@@ -235,7 +237,7 @@ public class ServerFacade {
                     }
                 }
                 notifyUpdatedUserList(users);
-                //Log.e("glassconference", resp.toString());
+                Log.e("glassconference", resp.toString());
             } catch (JSONException e) {
                 Log.e("glassconference", "Error parsing JSON from updateLocationTask.", e);
             }
@@ -260,5 +262,12 @@ public class ServerFacade {
 
     public static interface UserUpdateListener {
         void onUserListUpdate(User[] users);
+    }
+
+    private static String[] parseList(String listString) {
+        if (listString == null || listString.trim().length() == 0) {
+            return new String[0];
+        }
+        return listString.split(",");
     }
 }

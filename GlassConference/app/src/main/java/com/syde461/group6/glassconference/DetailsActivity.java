@@ -56,25 +56,36 @@ public class DetailsActivity extends Activity {
     }
 
     private void createCards() {
-        cards = new ArrayList<CardBuilder>();
+        cards = new ArrayList<>();
 
         Bitmap bmp = UserManager.getInstance().getBitmapFromMemCache(user.makeKey());
         if (bmp == null) {
             bmp = BitmapFactory.decodeResource(getResources(), R.drawable.profile_default);
         }
-        cards.add(new CardBuilder(this, CardBuilder.Layout.AUTHOR)
-                .setHeading(user.getName())
-                .setSubheading(user.getPosition())
+        // Employer and position card
+        cards.add(new CardBuilder(this, CardBuilder.Layout.TEXT)
+                .setFootnote(user.getName())
                 .setIcon(bmp)
-                .setText(user.getEmployer()));
-        if (user.getConnections() != null && user.getConnections().trim().length() > 0) {
+                .setText(user.getEmployer() + "\n" + user.getPosition()));
+        // Mutual connections card
+        if (user.getConnections().length > 0) {
             cards.add(new CardBuilder(this, CardBuilder.Layout.TEXT)
-                    .setText("Mutual connections: " + user.getConnections())
+                    .setText("Mutual connections")
                     .setFootnote(user.getName()));
         }
-        cards.add(new CardBuilder(this, CardBuilder.Layout.TEXT)
-                .setText("Papers: " + user.getPapers())
-                .setFootnote(user.getName()));
+        // Papers card
+        if (user.getPapers().length > 0) {
+            cards.add(new CardBuilder(this, CardBuilder.Layout.TEXT)
+                    .setText("Papers")
+                    .setFootnote(user.getName()));
+        }
+        // Interests card
+        if (user.getInterests().length > 0) {
+            cards.add(new CardBuilder(this, CardBuilder.Layout.TEXT)
+                    .setText("Interests")
+                    .setFootnote(user.getName()));
+        }
+        // Image card
         cards.add(new CardBuilder(this, CardBuilder.Layout.TITLE)
                 .setText(user.getName())
                 .addImage(bmp));
