@@ -1,6 +1,7 @@
 package com.syde461.group6.glassconference;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,12 +19,10 @@ public class UserCardBuilder {
     public UserCardBuilder(Context context, User user) {
         this.context = context;
         this.user = user;
-        // TODO(jeffsul): Download and add User image asynchronously.
     }
 
     public View getView(View convertView, ViewGroup parent, float rotation) {
         if (convertView == null) {
-            // TODO(jeffsul): Make layout choice dependent on flag.
             convertView = LayoutInflater.from(context).inflate(R.layout.user_left_column, parent);
         }
 
@@ -35,7 +34,12 @@ public class UserCardBuilder {
         positionView.setText(user.getPosition());
 
         ImageView profileView = (ImageView) convertView.findViewById(R.id.user_profile);
-        profileView.setImageResource(user.getImage());
+        Bitmap bmp = UserManager.getInstance().getBitmapFromMemCache(user.makeKey());
+        if (bmp == null) {
+            profileView.setImageResource(user.getImage());
+        } else {
+            profileView.setImageBitmap(bmp);
+        }
 
         ImageView arrowView = (ImageView) convertView.findViewById(R.id.timestamp);
         if (rotation < 0) {

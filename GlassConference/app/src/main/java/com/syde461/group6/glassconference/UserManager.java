@@ -83,7 +83,7 @@ public class UserManager implements ServerFacade.UserUpdateListener {
             } catch (IOException e) {
                 Log.e("confv2", "Error loading image.", e);
             }
-            if (bmp != null) {
+            if (bmp != null && BrowseActivity.VERSION == 2) {
                 bmp = ImageUtil.getRoundedCornerBitmap(bmp);
             }
             return bmp;

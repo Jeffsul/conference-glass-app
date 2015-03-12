@@ -24,6 +24,8 @@ import com.syde461.group6.glassconference.util.GpsLiveCardService;
 public class BrowseActivity extends Activity {
     public static final String TAG = "glassconference";
 
+    public static final int VERSION = 2;
+
     private static final long MAX_UPDATE_DELAY = 500;
     private long lastUpdateRequest = Long.MIN_VALUE;
 

@@ -33,6 +33,8 @@ import java.util.concurrent.TimeUnit;
 public class BrowseActivity extends Activity {
     public static final String TAG = "glassconference";
 
+    public static final int VERSION = 1;
+
     private static final long EXIT_INTERACTION_MODE_DELAY = TimeUnit.SECONDS.toMillis(10);
 
     private static final long MAX_UPDATE_DELAY = TimeUnit.SECONDS.toMillis(8);
