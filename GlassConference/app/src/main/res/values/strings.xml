@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">GlassConference</string>
     <string name="title_activity_live_card_service">GlassConference Demo</string>
     <string name="action_location_utility">GPS Utility</string>
     <string name="action_stop">Stop</string>
