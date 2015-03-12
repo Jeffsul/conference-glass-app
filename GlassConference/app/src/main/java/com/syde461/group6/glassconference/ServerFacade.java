@@ -179,6 +179,7 @@ public class ServerFacade {
 
         @Override
         protected void onPostExecute(String result) {
+            Log.e("glassconference", result);
             try {
                 JSONArray resp = new JSONArray(result);
                 User[] users = new User[resp.length()];
@@ -237,7 +238,6 @@ public class ServerFacade {
                     }
                 }
                 notifyUpdatedUserList(users);
-                Log.e("glassconference", resp.toString());
             } catch (JSONException e) {
                 Log.e("glassconference", "Error parsing JSON from updateLocationTask.", e);
             }

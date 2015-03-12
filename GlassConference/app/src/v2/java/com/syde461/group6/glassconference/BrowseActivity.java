@@ -52,7 +52,7 @@ public class BrowseActivity extends Activity {
 
         l("Starting demo!");
         // Initialize the demo with N fake users
-        ServerFacade.initializeDemo(OrientationManager.DEFAULT_LOCATION, 16, 0);
+        ServerFacade.initializeDemo(OrientationManager.DEFAULT_LOCATION, 12, 0);
 
         // Stop the display from dimming.
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -113,7 +113,7 @@ public class BrowseActivity extends Activity {
 
     private void makeLocationUpdateRequest() {
         if (location != null) {
-            //l("Making location update request.");
+            l("Making location update request.");
             ServerFacade.updateLocation(location, orientationManager.getBearing(),
                     browseView.getSelectedUserId());
             lastUpdateRequest = System.currentTimeMillis();

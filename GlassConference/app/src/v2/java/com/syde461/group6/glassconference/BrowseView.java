@@ -149,7 +149,7 @@ public class BrowseView extends View {
 
         canvas.save();
         float canvasX = -animatedHeading * pixelsPerDegree + centerX;
-        float canvasY = getHeight() - 115;
+        float canvasY = getHeight() - 120;
         l("Drawing canvas, X: " + canvasX);
         canvas.translate(canvasX, canvasY);
 
