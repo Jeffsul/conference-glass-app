@@ -24,7 +24,7 @@ public class FakeEnvironment {
             new User.Builder().id(4).name("Kyle Koerth").employer("Cars").image(R.drawable.profile_kyle).build()
     };
 
-    private List<User> fakeUsers = new ArrayList<User>();
+    private List<User> fakeUsers = new ArrayList<>();
 
     private Handler handler;
 

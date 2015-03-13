@@ -15,9 +15,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import com.syde461.group6.glassconference.util.MathUtil;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Tracks device location and orientation.
@@ -26,7 +27,6 @@ import java.util.concurrent.TimeUnit;
  * from https://github.com/googleglass/gdk-compass-sample
  */
 public class OrientationManager {
-
     /**
      * The minimum distance desired between location notifications.
      */
@@ -129,7 +129,6 @@ public class OrientationManager {
         @Override
         public void onSensorChanged(SensorEvent event) {
             if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
-                double oldBearing = bearing;
                 // Get the current heading, then notify listeners.
                 SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values);
                 SensorManager.remapCoordinateSystem(rotationMatrix, SensorManager.AXIS_X,
@@ -142,11 +141,10 @@ public class OrientationManager {
 
                 // Convert heading from magnetic to true north.
                 float magneticHeading = (float) Math.toDegrees(orientation[0]);
-                bearing = mod(computeTrueNorth(magneticHeading), 360.0f) - ARM_DISPLACEMENT_DEGREES;
+                bearing = MathUtil.mod(computeTrueNorth(magneticHeading), 360.0f)
+                        - ARM_DISPLACEMENT_DEGREES;
 
-                //if (Math.abs(bearing - oldBearing) > 2) {
-                    notifyOrientationChange();
-                //}
+                notifyOrientationChange();
             }
         }
 
@@ -207,14 +205,12 @@ public class OrientationManager {
     }
 
     private void notifyOrientationChange() {
-        //Log.e("glassconference", "BEARING: " + bearing);
         for (OrientationListener listener : listeners) {
             listener.onOrientationChanged(bearing);
         }
     }
 
     private void notifyLocationChange() {
-        //Log.e("glassconference", location.getLatitude() + ", " + location.getLongitude());
         for (OrientationListener listener : listeners) {
             listener.onLocationChanged(location);
         }
@@ -240,20 +236,5 @@ public class OrientationManager {
             return heading + geomagneticField.getDeclination();
         }
         return heading;
-    }
-
-    /**
-     * From: https://github.com/googleglass/gdk-compass-sample/blob/master/app/src/main/java/com/
-     *              google/android/glass/sample/compass/util/MathUtils.java
-     *
-     * Calculates {@code a mod b} in a way that respects negative values (for example,
-     * {@code mod(-1, 5) == 4}, rather than {@code -1}).
-     *
-     * @param a the dividend
-     * @param b the divisor
-     * @return {@code a mod b}
-     */
-    private static float mod(float a, float b) {
-        return (a % b + b) % b;
     }
 }

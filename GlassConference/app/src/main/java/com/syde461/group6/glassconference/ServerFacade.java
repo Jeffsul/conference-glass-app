@@ -52,8 +52,7 @@ public class ServerFacade {
     private static boolean fake = false;
     private static FakeEnvironment fakeEnvironment = new FakeEnvironment();
 
-    private static List<UserUpdateListener> userListeners =
-            new ArrayList<UserUpdateListener>();
+    private static List<UserUpdateListener> userListeners = new ArrayList<>();
 
     // Disallow instantiation.
     private ServerFacade() {}
@@ -183,8 +182,6 @@ public class ServerFacade {
             try {
                 JSONArray resp = new JSONArray(result);
                 User[] users = new User[resp.length()];
-                int mCount = 0;
-                int fCount = 0;
                 for (int i = 0; i < users.length; i++) {
                     JSONObject obj = resp.getJSONObject(i);
                     int id = obj.getInt("id");
@@ -199,14 +196,6 @@ public class ServerFacade {
                         User.Gender gender = obj.getString("gender").equals("Female")
                                 ? User.Gender.F : User.Gender.M;
                         builder.gender(gender);
-
-//                        if (gender == User.Gender.F) {
-//                            builder.image(FEMALE_PROFILES[fCount]);
-//                            fCount++;
-//                        } else {
-//                            builder.image(MALE_PROFILES[mCount]);
-//                            mCount++;
-//                        }
                     }
                     if (obj.has("company")) {
                         builder.employer(obj.getString("company"));

@@ -2,21 +2,12 @@ package com.syde461.group6.glassconference;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
-import android.graphics.Rect;
-import android.graphics.RectF;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.util.LruCache;
-import android.widget.ImageView;
 
 import com.syde461.group6.glassconference.util.ImageUtil;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +21,9 @@ public class UserManager implements ServerFacade.UserUpdateListener {
     private User[] users;
     private User[] getLastUsers;
 
-    private List<UserChangeListener> listeners = new ArrayList<UserChangeListener>();
+    private List<UserChangeListener> listeners = new ArrayList<>();
+
+    private LruCache<String, Bitmap> memoryCache;
 
     private UserManager() {
         users = new User[0];
@@ -46,14 +39,11 @@ public class UserManager implements ServerFacade.UserUpdateListener {
         memoryCache = new LruCache<String, Bitmap>(cacheSize) {
             @Override
             protected int sizeOf(String key, Bitmap bitmap) {
-                // The cache size will be measured in kilobytes rather than
-                // number of items.
+                // The cache size will be measured in kilobytes.
                 return bitmap.getByteCount() / 1024;
             }
         };
     }
-
-    private LruCache<String, Bitmap> memoryCache;
 
     private void addBitmapToMemoryCache(String key, Bitmap bitmap) {
         if (getBitmapFromMemCache(key) == null) {
@@ -78,10 +68,8 @@ public class UserManager implements ServerFacade.UserUpdateListener {
             try {
                 URL url = new URL(imageUrl[0]);
                 bmp = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-            } catch (MalformedURLException e) {
+            } catch (Exception e) {
                 Log.e("confv2", "Error loading image: " + imageUrl[0], e);
-            } catch (IOException e) {
-                Log.e("confv2", "Error loading image.", e);
             }
             if (bmp != null && BrowseActivity.VERSION == 2) {
                 bmp = ImageUtil.getRoundedCornerBitmap(bmp);
