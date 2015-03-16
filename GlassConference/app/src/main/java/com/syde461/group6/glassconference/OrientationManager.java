@@ -51,7 +51,7 @@ public class OrientationManager {
         DEFAULT_LOCATION.setAltitude(300);
         DEFAULT_LOCATION.setTime(System.currentTimeMillis());
     }
-    private static boolean fake = true;
+    private static boolean fake = false;
 
     private Handler handler;
 
@@ -71,15 +71,15 @@ public class OrientationManager {
     private static OrientationManager instance;
 
     public static OrientationManager initialize(Context context) {
-        if (instance == null) {
+        //if (instance == null) {
             LocationManager lm = (LocationManager)
                     context.getSystemService(Context.LOCATION_SERVICE);
             SensorManager sm = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
-            instance = new OrientationManager(lm, sm);
-        } else {
-            Log.e("glassconference", "OrientationManager initialized twice!");
-        }
-        return instance;
+            //instance = new OrientationManager(lm, sm);
+        //} else {
+        //    Log.e("glassconference", "OrientationManager initialized twice!");
+        //}
+        return new OrientationManager(lm, sm);//instance;
     }
 
     public static OrientationManager getInstance() {
