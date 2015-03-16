@@ -21,9 +21,7 @@ import com.google.android.glass.widget.CardScrollView;
 import com.syde461.group6.glassconference.util.GpsLiveCardService;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -37,13 +35,9 @@ public class BrowseActivity extends Activity {
 
     private static final long EXIT_INTERACTION_MODE_DELAY = TimeUnit.SECONDS.toMillis(10);
 
-    private static final long MAX_UPDATE_DELAY = TimeUnit.SECONDS.toMillis(8);
-
     private static final int OFFSET = 200;
 
     private static final double MAX_DEGREES_BEFORE_UPDATE = 10;
-
-    private long lastUpdateRequest = Long.MAX_VALUE;
 
     private GestureDetector gestureDetector;
 
@@ -82,7 +76,6 @@ public class BrowseActivity extends Activity {
         ServerFacade.initializeDemo(OrientationManager.DEFAULT_LOCATION, 8, 0);
 
         // Stop the display from dimming.
-        // TODO(jeffsul): Implement timeout?
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         orientationManager = OrientationManager.initialize(this);
@@ -93,7 +86,6 @@ public class BrowseActivity extends Activity {
             public void onLocationChanged(Location location) {
                 BrowseActivity.this.location = location;
                 updateBearing = BrowseActivity.this.userBearing;
-                // TODO(jeffsul): Disassociate this from UI/BrowseActivity.
                 makeLocationUpdateRequest();
             }
 
@@ -328,31 +320,31 @@ public class BrowseActivity extends Activity {
         return getIndexByBearing(bearing, users);
     }
 
-    public static int getIndexByBearing(double bearing, User[] users) {
+    public static int getIndexByBearing(final double bearing, User[] users) {
         int l = users.length;
-        if (l == 0) {
+        if (l == 0 || l == 1) {
             return 0;
         }
-        int index = -1;
-        double[] bearings = new double[l];
-        for (int i = 0; i < l; i++) {
-            bearings[i] = users[i].getBearing();
-        }
-        for (int i = 0; i < l; i++) {
-            int a = i;
-            int b = (i + 1) % l;
-            double diffA = diff(bearing, bearings[a]);
-            double diffB = diff(bearings[b], bearing);
-            if (diffA >= 0 && diffB >= 0) {
-                l("Found interval: " + users[a].getName() + " (" + diffA + ") " + users[b].getName() + " (" + diffB + ")");
-                if (diffA < SCOPE && diffB < SCOPE) {
-                    return users[a].getDistance() < users[b].getDistance() ? a : b;
-                } else {
-                    return diffA < diffB ? a : b;
-                }
+        User[] users1 = users.clone();
+        Arrays.sort(users1, new Comparator<User>() {
+            @Override
+            public int compare(User user, User user2) {
+                return Math.abs(diff(user.getBearing(), bearing)) > Math.abs(diff(user2.getBearing(), bearing)) ? 1 : -1;
+            }
+        });
+        User closest = users1[0];
+        l("Closest: " + closest.getName() + ", " + diff(closest.getBearing(), bearing));
+        if (Math.abs(diff(closest.getBearing(), bearing)) < SCOPE && Math.abs(diff(users1[1].getBearing(), bearing)) < SCOPE) {
+            if (closest.getDistance() > users1[1].getDistance()) {
+                closest = users1[1];
             }
         }
-        return index;
+        for (int i = 0; i < users.length; i++) {
+            if (users[i].equals(closest)) {
+                return i;
+            }
+        }
+        return 0;
     }
 
     public static double diff(double deg1, double deg2) {
