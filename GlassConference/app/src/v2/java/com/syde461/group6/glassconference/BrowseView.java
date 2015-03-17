@@ -35,6 +35,21 @@ public class BrowseView extends View {
     private static final float DIRECTION_TEXT_HEIGHT = 84.0f;
     private static final float USER_TEXT_HEIGHT = 24.0f;
 
+    /** Transparency for the black rectangle used as background for user name & company. */
+    private static final int TEXT_BG_ALPHA = 100;
+    /** Minimum transparency of a profile picture, used for the furthest away by distance. */
+    private static final int MIN_PROFILE_ALPHA = 180;
+
+    /** Maximum size for a profile picture, used for closest by distance. */
+    private static final int MAX_PROFILE_SIZE = 160;
+    /** Minimum size for a profile picture, used for furthest away by distance. */
+    private static final int MIN_PROFILE_SIZE = 120;
+
+    /** Smallest offset at which a profile picture can be drawn from the bottom of the View. */
+    private static final float BOTTOM_BUFFER = MAX_PROFILE_SIZE / 2 + 2 * USER_TEXT_HEIGHT + 5;
+    /** Smallest offset at which a profile picture can be drawn from the top of the View. */
+    private static final float TOP_BUFFER = MIN_PROFILE_SIZE / 2 + 5;
+
     private static final float MIN_DISTANCE_TO_ANIMATE = 15.0f;
 
     private final Bitmap defaultProfile;
@@ -150,7 +165,7 @@ public class BrowseView extends View {
 
         canvas.save();
         float canvasX = -animatedHeading * pixelsPerDegree + centerX;
-        float canvasY = getHeight() - 120;
+        float canvasY = getHeight() - BOTTOM_BUFFER;
         l("Drawing canvas, X: " + canvasX);
         canvas.translate(canvasX, canvasY);
 
@@ -201,7 +216,6 @@ public class BrowseView extends View {
     }
 
     private void drawNearbyPeople(Canvas canvas, float pixelsPerDegree, float offset) {
-        l("Drawing people: " + users.length);
         synchronized (users) {
             if (users.length ==  0) {
                 return;
@@ -228,23 +242,25 @@ public class BrowseView extends View {
                 }
                 bestUser = shortestUser;
             }
-            float maxDistance = (float)users[0].getDistance();
-            float minDistance = (float)users[users.length - 1].getDistance();
+            float maxDistance = (float) users[0].getDistance();
+            float minDistance = (float) users[users.length - 1].getDistance();
             for (User user : users) {
+                if (user.equals(selectedUser)) {
+                    continue;
+                }
                 Bitmap bmp = userManager.getBitmapFromMemCache(user.makeKey());
                 if (bmp == null) {
                     bmp = defaultProfile;
                 }
                 float bearing = (float) user.getBearing();
                 float distRatio = ((float) user.getDistance() - minDistance) / (maxDistance - minDistance);
-                float distOffset = 170 * distRatio;
-
-                float bmpHeight = bmp.getHeight();
-                float bmpWidth = bmp.getWidth();
-                float bmpX = offset + bearing * pixelsPerDegree - bmpWidth / 2;
-                float bmpY = -bmpHeight / 2 - distOffset;
-                RectF bmpRect = new RectF(bmpX, bmpY, bmpX + bmpWidth, bmpY + bmpHeight);
-                paint.setAlpha(255 - (int)(distRatio * 180));
+                // Assume circular, and thus equal width and height.
+                float bmpSize = MAX_PROFILE_SIZE - distRatio * (MAX_PROFILE_SIZE - MIN_PROFILE_SIZE);
+                float distOffset = (getHeight() - BOTTOM_BUFFER - TOP_BUFFER) * distRatio;
+                float bmpX = offset + bearing * pixelsPerDegree - bmpSize / 2;
+                float bmpY = -bmpSize / 2 - distOffset;
+                RectF bmpRect = new RectF(bmpX, bmpY, bmpX + bmpSize, bmpY + bmpSize);
+                paint.setAlpha(255 - (int)(distRatio * MIN_PROFILE_ALPHA));
                 canvas.drawBitmap(bmp, null, bmpRect, paint);
             }
 
@@ -254,10 +270,9 @@ public class BrowseView extends View {
                 bmp = defaultProfile;
             }
             float bearing = (float) selectedUser.getBearing();
-
             double distance = selectedUser.getDistance();
             float distRatio = ((float)distance - minDistance) / (maxDistance - minDistance);
-            float distOffset = 170 * distRatio;
+            float distOffset = (getHeight() - BOTTOM_BUFFER - TOP_BUFFER) * distRatio;
             Rect text1Bounds = new Rect();
             Rect text2Bounds = new Rect();
             String text = selectedUser.getName();
@@ -287,7 +302,7 @@ public class BrowseView extends View {
             Rect textBounds = new Rect(text1Bounds);
             textBounds.union(text2Bounds);
             paint.setColor(Color.BLACK);
-            paint.setAlpha(100);
+            paint.setAlpha(TEXT_BG_ALPHA);
             int padding = 3;
             canvas.drawRect(textBounds.left - padding, textBounds.top - padding,
                     textBounds.right + padding, textBounds.bottom + padding, paint);
