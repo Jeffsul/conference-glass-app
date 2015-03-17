@@ -66,14 +66,12 @@ public class BrowseActivity extends Activity {
             @Override
             public void onLocationChanged(Location location) {
                 BrowseActivity.this.location = location;
-                // TODO(jeffsul): Disassociate this from UI/BrowseActivity.
                 makeLocationUpdateRequest();
             }
 
             @Override
             public void onOrientationChanged(double bearing) {
                 if (System.currentTimeMillis() - lastUpdateRequest > MAX_UPDATE_DELAY) {
-                    //l("Max Degrees before update reached.");
                     makeLocationUpdateRequest();
                 }
                 browseView.setBearing((float) bearing);

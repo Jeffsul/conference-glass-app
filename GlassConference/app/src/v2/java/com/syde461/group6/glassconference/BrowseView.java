@@ -10,6 +10,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.text.TextPaint;
 import android.util.AttributeSet;
@@ -235,29 +236,19 @@ public class BrowseView extends View {
                     bmp = defaultProfile;
                 }
                 float bearing = (float) user.getBearing();
-
-                double distance = user.getDistance();
-                float distRatio = ((float)distance - minDistance) / (maxDistance - minDistance);
+                float distRatio = ((float) user.getDistance() - minDistance) / (maxDistance - minDistance);
                 float distOffset = 170 * distRatio;
-                Rect textBounds = new Rect();
-                String text = user.getName();
-                userNamePaint.getTextBounds(text, 0, text.length(), textBounds);
-                //textBounds.offsetTo((int)(offset + bearing * pixelsPerDegree), 5);
 
                 float bmpHeight = bmp.getHeight();
                 float bmpWidth = bmp.getWidth();
                 float bmpX = offset + bearing * pixelsPerDegree - bmpWidth / 2;
                 float bmpY = -bmpHeight / 2 - distOffset;
+                RectF bmpRect = new RectF(bmpX, bmpY, bmpX + bmpWidth, bmpY + bmpHeight);
                 paint.setAlpha(255 - (int)(distRatio * 180));
-                canvas.drawBitmap(bmp, bmpX, bmpY, paint);
-
-//                if (user == bestUser) {
-//                    float textX = offset + bearing * pixelsPerDegree - textWidth / 2;
-//                    float textY = 5 + USER_TEXT_HEIGHT + bmp.getHeight() / 2 - distOffset;
-//                    canvas.drawText(text, textX, textY, userNamePaint);
-//                }
+                canvas.drawBitmap(bmp, null, bmpRect, paint);
             }
 
+            // Paint the selected user on top of everything else.
             Bitmap bmp = userManager.getBitmapFromMemCache(selectedUser.makeKey());
             if (bmp == null) {
                 bmp = defaultProfile;
@@ -267,13 +258,14 @@ public class BrowseView extends View {
             double distance = selectedUser.getDistance();
             float distRatio = ((float)distance - minDistance) / (maxDistance - minDistance);
             float distOffset = 170 * distRatio;
-            Rect textBounds = new Rect();
+            Rect text1Bounds = new Rect();
+            Rect text2Bounds = new Rect();
             String text = selectedUser.getName();
             String text2 = selectedUser.getEmployer();
-            userNamePaint.getTextBounds(text, 0, text.length(), textBounds);
-            float text2Width = userNamePaint.measureText(text2);
-            //textBounds.offsetTo((int)(offset + bearing * pixelsPerDegree), 5);
+            userNamePaint.getTextBounds(text, 0, text.length(), text1Bounds);
+            userNamePaint.getTextBounds(text2, 0, text2.length(), text2Bounds);
 
+            // Draw user profile image and circle border.
             float bmpHeight = bmp.getHeight();
             float bmpWidth = bmp.getWidth();
             float bmpX = offset + bearing * pixelsPerDegree - bmpWidth / 2;
@@ -283,13 +275,26 @@ public class BrowseView extends View {
             canvas.drawCircle(offset + bearing * pixelsPerDegree, -distOffset, bmpHeight / 2 + 3, paint);
             canvas.drawBitmap(bmp, bmpX, bmpY, paint);
 
-            float textX = offset + bearing * pixelsPerDegree - textBounds.width() / 2;
-            float textY = 4 + USER_TEXT_HEIGHT + bmp.getHeight() / 2 - distOffset;
-            canvas.drawText(text, textX, textY, userNamePaint);
+            // Calculate text positions.
+            float text1X = offset + bearing * pixelsPerDegree - text1Bounds.width() / 2;
+            float text1Y = 3 + USER_TEXT_HEIGHT + bmp.getHeight() / 2 - distOffset;
+            text1Bounds.offsetTo((int) text1X, (int) (text1Y - text1Bounds.height()));
+            float text2X = offset + bearing * pixelsPerDegree - text2Bounds.width() / 2;
+            float text2Y = text1Y + text1Bounds.height() + 2;
+            text2Bounds.offsetTo((int) text2X, (int) (text2Y - text2Bounds.height()));
 
-            textX = offset + bearing * pixelsPerDegree - text2Width / 2;
-            textY += textBounds.height() + 2;
-            canvas.drawText(text2, textX, textY, userNamePaint);
+            // Draw transparent rectangle underneath text.
+            Rect textBounds = new Rect(text1Bounds);
+            textBounds.union(text2Bounds);
+            paint.setColor(Color.BLACK);
+            paint.setAlpha(100);
+            int padding = 3;
+            canvas.drawRect(textBounds.left - padding, textBounds.top - padding,
+                    textBounds.right + padding, textBounds.bottom + padding, paint);
+
+            // Draw two lines of text.
+            canvas.drawText(text, text1X, text1Y, userNamePaint);
+            canvas.drawText(text2, text2X, text2Y, userNamePaint);
         }
     }
 
