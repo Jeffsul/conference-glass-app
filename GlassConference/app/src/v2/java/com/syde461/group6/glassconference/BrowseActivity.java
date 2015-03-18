@@ -1,9 +1,11 @@
 package com.syde461.group6.glassconference;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.location.Location;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.LruCache;
@@ -13,6 +15,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 
+import com.google.android.glass.media.Sounds;
 import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
 import com.syde461.group6.glassconference.util.GpsLiveCardService;
@@ -32,6 +35,7 @@ public class BrowseActivity extends Activity {
     private BrowseView browseView;
 
     private GestureDetector gestureDetector;
+    private AudioManager audioManager;
 
     private OrientationManager orientationManager;
     private UserManager userManager;
@@ -87,13 +91,16 @@ public class BrowseActivity extends Activity {
                     @Override
                     public boolean onGesture(Gesture gesture) {
                         if (gesture == Gesture.SWIPE_DOWN) {
+                            audioManager.playSoundEffect(Sounds.DISMISSED);
                             openOptionsMenu();
                             return true;
                         } else if (gesture == Gesture.SWIPE_LEFT || gesture == Gesture.SWIPE_RIGHT) {
                             Log.e(TAG, "Entering interaction mode.");
+                            audioManager.playSoundEffect(Sounds.SELECTED);
                             browseView.switchSelection(gesture == Gesture.SWIPE_LEFT ? -1 : 1);
                             return true;
                         } else if (gesture == Gesture.TAP) {
+                            audioManager.playSoundEffect(Sounds.TAP);
                             Intent intent = new Intent(BrowseActivity.this, DetailsActivity.class);
                             intent.putExtra("user", browseView.getSelectedUser());
                             startActivity(intent);
@@ -102,6 +109,7 @@ public class BrowseActivity extends Activity {
                         return false;
                     }
                 });
+        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 
         userManager.addListener(new UserManager.UserChangeListener() {
             @Override
