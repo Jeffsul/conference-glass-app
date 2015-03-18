@@ -14,13 +14,9 @@ import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.text.TextPaint;
 import android.util.AttributeSet;
-import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 
-import com.google.android.glass.touchpad.Gesture;
-import com.google.android.glass.touchpad.GestureDetector;
 import com.syde461.group6.glassconference.util.ImageUtil;
 import com.syde461.group6.glassconference.util.MathUtil;
 
@@ -28,7 +24,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 /**
- * Created by Jeff on 10/03/2015.
+ * Dynamic view for browsing nearby people in "compass" mode.
  */
 public class BrowseView extends View {
 
@@ -72,8 +68,6 @@ public class BrowseView extends View {
     private OrientationManager orientationManager;
     private UserManager userManager;
 
-    private GestureDetector gestureDetector;
-
     private User[] users = new User[0];
 
     private User selectedUser;
@@ -112,19 +106,6 @@ public class BrowseView extends View {
 
         animator = new ValueAnimator();
         setupAnimator();
-
-        gestureDetector = new GestureDetector(getContext()).setBaseListener(
-                new GestureDetector.BaseListener() {
-                    @Override
-                    public boolean onGesture(Gesture gesture) {
-                        if (gesture == Gesture.SWIPE_LEFT || gesture == Gesture.SWIPE_RIGHT) {
-                            Log.e("confv2", "Entering interaction mode.");
-                            switchSelection(gesture == Gesture.SWIPE_LEFT ? -1 : 1);
-                            return true;
-                        }
-                        return false;
-                    }
-                });
     }
 
     public void setOrientationManager(OrientationManager orientationManager) {
@@ -161,12 +142,10 @@ public class BrowseView extends View {
         // equal to one full view cycle.
         float pixelsPerDegree = getWidth() / 90.0f;
         float centerX = getWidth() / 2.0f;
-        float centerY = getHeight() / 2.0f;
 
         canvas.save();
         float canvasX = -animatedHeading * pixelsPerDegree + centerX;
         float canvasY = getHeight() - BOTTOM_BUFFER;
-        l("Drawing canvas, X: " + canvasX);
         canvas.translate(canvasX, canvasY);
 
         for (int i = -1; i <= 1; i++) {
@@ -184,25 +163,27 @@ public class BrowseView extends View {
         return selectedUser;
     }
 
-    @Override
-    public boolean onGenericMotionEvent(MotionEvent event) {
-        return gestureDetector.onMotionEvent(event);
-    }
-
     public void switchSelection(int direction) {
         synchronized (users) {
-            User[] users = this.users.clone();
+            User[] usersClone = users.clone();
             final float selectedBearing = (float) selectedUser.getBearing();
-            Arrays.sort(users, new Comparator<User>() {
+            Arrays.sort(usersClone, new Comparator<User>() {
                 @Override
                 public int compare(User user, User user2) {
                     return MathUtil.diff((float)user.getBearing(), selectedBearing) > MathUtil.diff((float)user2.getBearing(), selectedBearing) ? 1 : -1;
                 }
             });
             User nextSelection = null;
-            for (int i = 1; i < users.length; i++) {
-                if (direction * (users[i].getBearing() - selectedBearing) > 0) {
-                    nextSelection = users[i];
+            for (int i = 1; i < usersClone.length; i++) {
+                float diffCW;
+                if (usersClone[i].getBearing() > selectedBearing) {
+                    diffCW = (float)usersClone[i].getBearing() - selectedBearing;
+                } else {
+                    diffCW = 360 + (float)usersClone[i].getBearing() - selectedBearing;
+                }
+                float diffCCW = 360 - diffCW;
+                if (direction * (diffCCW - diffCW) > 0) {
+                    nextSelection = usersClone[i];
                     break;
                 }
             }
@@ -314,7 +295,7 @@ public class BrowseView extends View {
     }
 
     public void setBearing(float bearing) {
-        this.bearing = mod(bearing, 360.0f);
+        this.bearing = MathUtil.mod(bearing, 360.0f);
         animateTo(bearing);
     }
 
@@ -325,7 +306,7 @@ public class BrowseView extends View {
         animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animator) {
-                animatedHeading = mod((Float) animator.getAnimatedValue(), 360.0f);
+                animatedHeading = MathUtil.mod((Float) animator.getAnimatedValue(), 360.0f);
                 invalidate();
             }
         });
@@ -374,18 +355,6 @@ public class BrowseView extends View {
             animator.start();
             l("Staring animator: " + start + " to " + goal);
         }
-    }
-
-    /**
-     * Calculates {@code a mod b} in a way that respects negative values (for example,
-     * {@code mod(-1, 5) == 4}, rather than {@code -1}).
-     *
-     * @param a the dividend
-     * @param b the divisor
-     * @return {@code a mod b}
-     */
-    public static float mod(float a, float b) {
-        return (a % b + b) % b;
     }
 
     private static void l(String msg) {
