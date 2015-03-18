@@ -86,7 +86,7 @@ public class BrowseActivity extends Activity {
                 new GestureDetector.BaseListener() {
                     @Override
                     public boolean onGesture(Gesture gesture) {
-                        if (gesture == Gesture.LONG_PRESS) {
+                        if (gesture == Gesture.SWIPE_DOWN) {
                             openOptionsMenu();
                             return true;
                         } else if (gesture == Gesture.SWIPE_LEFT || gesture == Gesture.SWIPE_RIGHT) {
@@ -159,13 +159,10 @@ public class BrowseActivity extends Activity {
     @Override
     public boolean onOptionsItemSelected(MenuItem menuItem) {
         switch (menuItem.getItemId()) {
-            case R.id.action_location_utility:
-                // Launch GPS utility.
-                // TODO(jeffsul): Make this dependent on startup flags.
-                startService(new Intent(this, GpsLiveCardService.class));
+            case R.id.action_stop:
+                finish();
                 return true;
-            default:
-                return false;
         }
+        return false;
     }
 }
