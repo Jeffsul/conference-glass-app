@@ -164,6 +164,9 @@ public class BrowseView extends View {
     }
 
     public void switchSelection(int direction) {
+        if (selectedUser == null) {
+            return;
+        }
         synchronized (users) {
             User[] usersClone = users.clone();
             final float selectedBearing = (float) selectedUser.getBearing();
@@ -251,8 +254,8 @@ public class BrowseView extends View {
                 bmp = defaultProfile;
             }
             float bearing = (float) selectedUser.getBearing();
-            double distance = selectedUser.getDistance();
-            float distRatio = ((float)distance - minDistance) / (maxDistance - minDistance);
+            float distance = (float) selectedUser.getDistance();
+            float distRatio = users.length == 1 ? 0 : (distance - minDistance) / (maxDistance - minDistance);
             float distOffset = (getHeight() - BOTTOM_BUFFER - TOP_BUFFER) * distRatio;
             Rect text1Bounds = new Rect();
             Rect text2Bounds = new Rect();
