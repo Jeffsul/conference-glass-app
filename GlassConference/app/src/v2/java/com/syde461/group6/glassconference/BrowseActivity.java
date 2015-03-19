@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.location.Location;
 import android.media.AudioManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.util.LruCache;
 import android.view.Menu;
@@ -30,7 +31,7 @@ public class BrowseActivity extends Activity {
     public static final int VERSION = 2;
 
     private static final long MAX_UPDATE_DELAY = 500;
-    private long lastUpdateRequest = Long.MIN_VALUE;
+    private long lastUpdateRequest = 0L;
 
     private BrowseView browseView;
 
@@ -40,7 +41,16 @@ public class BrowseActivity extends Activity {
     private OrientationManager orientationManager;
     private UserManager userManager;
 
-    private Location location;
+    private Location location = OrientationManager.DEFAULT_LOCATION;
+
+    private Handler handler;
+    private final Runnable updateRunnable = new Runnable() {
+        @Override
+        public void run() {
+            makeLocationUpdateRequest();
+            handler.postDelayed(this, MAX_UPDATE_DELAY);
+        }
+    };
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,7 +68,7 @@ public class BrowseActivity extends Activity {
 
         l("Starting demo!");
         // Initialize the demo with N fake users
-        ServerFacade.initializeDemo(OrientationManager.DEFAULT_LOCATION, 12, 0);
+        ServerFacade.initializeDemo(location, 12, 0);
 
         // Stop the display from dimming.
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -70,14 +80,14 @@ public class BrowseActivity extends Activity {
             @Override
             public void onLocationChanged(Location location) {
                 BrowseActivity.this.location = location;
-                makeLocationUpdateRequest();
+                //makeLocationUpdateRequest();
             }
 
             @Override
             public void onOrientationChanged(double bearing) {
-                if (System.currentTimeMillis() - lastUpdateRequest > MAX_UPDATE_DELAY) {
-                    makeLocationUpdateRequest();
-                }
+//                if (System.currentTimeMillis() - lastUpdateRequest > MAX_UPDATE_DELAY) {
+//                    makeLocationUpdateRequest();
+//                }
                 browseView.setBearing((float) bearing);
             }
         });
@@ -117,14 +127,17 @@ public class BrowseActivity extends Activity {
                 browseView.setNearbyPeople(users);
             }
         });
+
+        handler = new Handler();
+        handler.post(updateRunnable);
     }
 
     private void makeLocationUpdateRequest() {
-        if (location != null) {
+        lastUpdateRequest = System.currentTimeMillis();
+        if (location != null && orientationManager != null) {
             l("Making location update request.");
             ServerFacade.updateLocation(location, orientationManager.getBearing(),
                     browseView.getSelectedUserId());
-            lastUpdateRequest = System.currentTimeMillis();
         }
     }
 
