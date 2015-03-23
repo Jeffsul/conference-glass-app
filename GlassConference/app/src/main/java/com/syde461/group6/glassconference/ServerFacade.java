@@ -178,10 +178,17 @@ public class ServerFacade {
 
         @Override
         protected void onPostExecute(String result) {
+            JSONArray resp;
             try {
-                JSONArray resp = new JSONArray(result);
-                User[] users = new User[resp.length()];
-                for (int i = 0; i < users.length; i++) {
+                resp = new JSONArray(result);
+            } catch (JSONException e) {
+                Log.e("glassconference",
+                        "Error parsing JSON in updateLocationTask [result = " + result + "]", e);
+                return;
+            }
+            List<User> users = new ArrayList<>();
+            for (int i = 0; i < resp.length(); i++) {
+                try {
                     JSONObject obj = resp.getJSONObject(i);
                     int id = obj.getInt("id");
                     User.Builder builder = new User.Builder().id(id);
@@ -217,18 +224,20 @@ public class ServerFacade {
                     if (obj.has("picture")) {
                         builder.imageUrl(obj.getString("picture"));
                     }
-                    users[i] = builder.build();
+                    User user = builder.build();
                     if (obj.has("bearing")) {
-                        users[i].setBearing(obj.getDouble("bearing"));
+                        user.setBearing(obj.getDouble("bearing"));
                     }
                     if (obj.has("distance")) {
-                        users[i].setDistance(obj.getDouble("distance"));
+                        user.setDistance(obj.getDouble("distance"));
                     }
+                    users.add(user);
+                } catch (JSONException e) {
+                    Log.e("glassconference",
+                            "Error parsing user JSON in updateLocationTask [i = " + i + "]", e);
                 }
-                notifyUpdatedUserList(users);
-            } catch (JSONException e) {
-                Log.e("glassconference", "Error parsing JSON from updateLocationTask.", e);
             }
+            notifyUpdatedUserList(users.toArray(new User[users.size()]));
         }
     }
 
