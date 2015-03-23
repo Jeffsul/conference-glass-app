@@ -163,6 +163,7 @@ public class BrowseActivity extends Activity {
     public void onDestroy() {
         orientationManager.stopTracking();
         orientationManager = null;
+        handler.removeCallbacks(updateRunnable);
         super.onDestroy();
     }
 
