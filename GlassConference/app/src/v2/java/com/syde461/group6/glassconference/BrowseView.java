@@ -265,14 +265,14 @@ public class BrowseView extends View {
             userNamePaint.getTextBounds(text2, 0, text2.length(), text2Bounds);
 
             // Draw user profile image and circle border.
-            float bmpHeight = bmp.getHeight();
-            float bmpWidth = bmp.getWidth();
-            float bmpX = offset + bearing * pixelsPerDegree - bmpWidth / 2;
-            float bmpY = -bmpHeight / 2 - distOffset;
+            float bmpSize = MAX_PROFILE_SIZE;
+            float bmpX = offset + bearing * pixelsPerDegree - bmpSize / 2;
+            float bmpY = -bmpSize / 2 - distOffset;
             paint.setAlpha(255);
             paint.setColor(Color.WHITE);
-            canvas.drawCircle(offset + bearing * pixelsPerDegree, -distOffset, bmpHeight / 2 + 3, paint);
-            canvas.drawBitmap(bmp, bmpX, bmpY, paint);
+            canvas.drawCircle(offset + bearing * pixelsPerDegree, -distOffset, bmpSize / 2 + 3, paint);
+            RectF bmpRect = new RectF(bmpX, bmpY, bmpX + bmpSize, bmpY + bmpSize);
+            canvas.drawBitmap(bmp, null, bmpRect, paint);
 
             // Calculate text positions.
             float text1X = offset + bearing * pixelsPerDegree - text1Bounds.width() / 2;
